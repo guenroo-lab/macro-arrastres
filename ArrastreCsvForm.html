@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    body { font-family: Arial, sans-serif; font-size: 13px; padding: 16px; }
+    #estado { margin-top: 12px; white-space: pre-wrap; }
+    .error { color: #c00; }
+    .ok { color: #2a7; }
+    button { margin-top: 12px; }
+  </style>
+</head>
+<body>
+  <p>Selecciona el CSV de Valencia o Torija (ej. <code>Q_439ARR.CSV</code>, <code>Q_431ARR.CSV</code>):</p>
+  <input type="file" id="archivo" accept=".csv">
+  <br><button onclick="procesar()">Procesar</button>
+  <div id="estado"></div>
+
+  <script>
+    function procesar() {
+      const input = document.getElementById('archivo');
+      const estado = document.getElementById('estado');
+      if (!input.files.length) { estado.textContent = 'Elige un archivo primero.'; return; }
+      const archivo = input.files[0];
+      estado.textContent = 'Leyendo y procesando…';
+
+      const lector = new FileReader();
+      lector.onload = function () {
+        const base64 = lector.result.split(',')[1];
+        google.script.run
+          .withSuccessHandler(mostrarResultado)
+          .withFailureHandler(function (err) { estado.innerHTML = '<span class="error">' + err.message + '</span>'; })
+          .procesarCsvArrastre(base64, archivo.name);
+      };
+      lector.readAsDataURL(archivo);
+    }
+
+    function mostrarResultado(r) {
+      const estado = document.getElementById('estado');
+      if (r.error) { estado.innerHTML = '<span class="error">' + r.error + '</span>'; return; }
+      let txt = '<span class="ok">' + r.plataforma + ' procesada.</span><br>' + r.resumenProceso;
+      if (r.filasDescartadas) txt += '<br>(' + r.filasDescartadas + ' fila(s) descartada(s) por ancho incorrecto)';
+      estado.innerHTML = txt;
+    }
+  </script>
+</body>
+</html>

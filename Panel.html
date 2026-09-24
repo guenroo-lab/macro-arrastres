@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_top">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #080a10; color: #f2f3f5;
+    font-family: 'DM Sans', sans-serif; padding: 14px 12px 30px;
+    position: relative; overflow-x: hidden;
+  }
+  body::before {
+    content: ''; position: fixed; inset: 0; pointer-events: none; opacity: .035;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .head { text-align: center; margin-bottom: 16px; }
+  .head h1 {
+    font-family: 'Bebas Neue', sans-serif; font-size: 30px; letter-spacing: 2px;
+    line-height: 1; color: #fff;
+  }
+  .head h1 span { color: #e30613; }
+  .head p { font-size: 11px; color: #8a8f99; letter-spacing: .5px; margin-top: 3px; }
+
+  .sec { margin-bottom: 16px; }
+  .sec-title {
+    font-family: 'Bebas Neue', sans-serif; font-size: 15px; letter-spacing: 1.5px;
+    color: #e30613; margin: 0 2px 8px; display: flex; align-items: center; gap: 6px;
+    border-bottom: 1px solid rgba(227,6,19,.25); padding-bottom: 5px;
+  }
+  .sec-title .n {
+    background: #e30613; color: #fff; width: 18px; height: 18px; border-radius: 5px;
+    font-size: 11px; display: inline-flex; align-items: center; justify-content: center;
+    font-family: 'DM Sans', sans-serif; font-weight: 700;
+  }
+
+  .btn {
+    width: 100%; border: none; cursor: pointer; color: #fff;
+    background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08);
+    border-radius: 12px; padding: 13px 14px; margin-bottom: 8px;
+    font-family: 'DM Sans', sans-serif; font-size: 13.5px; font-weight: 500;
+    text-align: left; display: flex; align-items: center; gap: 11px;
+    transition: transform .12s, background .15s, border-color .15s;
+    backdrop-filter: blur(6px);
+  }
+  .btn:hover:not(:disabled) { transform: translateY(-1px); background: rgba(255,255,255,.08); }
+  .btn:active:not(:disabled) { transform: translateY(0); }
+  .btn:disabled { opacity: .55; cursor: wait; }
+  .btn i { font-size: 17px; width: 22px; text-align: center; flex-shrink: 0; }
+  .btn small { display: block; font-size: 10.5px; color: #9aa0aa; font-weight: 400; margin-top: 1px; }
+
+  .btn.green { background: rgba(0,176,80,.16); border-color: rgba(0,176,80,.45); }
+  .btn.green:hover:not(:disabled) { background: rgba(0,176,80,.26); }
+  .btn.green i { color: #5be584; }
+  .btn.red { background: rgba(227,6,19,.14); border-color: rgba(227,6,19,.4); }
+  .btn.red:hover:not(:disabled) { background: rgba(227,6,19,.24); }
+  .btn.red i { color: #ff5a63; }
+
+  .meco-box {
+    background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08);
+    border-radius: 12px; padding: 11px; margin-bottom: 8px;
+  }
+  .meco-box label { font-size: 11px; color: #9aa0aa; display: block; margin-bottom: 3px; }
+  .meco-row { display: flex; gap: 8px; margin-bottom: 9px; }
+  .meco-row > div { flex: 1; }
+  .meco-box input, .meco-box select {
+    width: 100%; padding: 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,.12);
+    background: #11141c; color: #fff; font-family: 'DM Sans', sans-serif; font-size: 13px;
+  }
+  .meco-box .btn { margin-bottom: 0; }
+
+  #status {
+    position: sticky; bottom: 0; margin-top: 6px; font-size: 12px; line-height: 1.4;
+    padding: 10px 12px; border-radius: 10px; min-height: 18px;
+    background: #11141c; border: 1px solid rgba(255,255,255,.1); color: #c7ccd4;
+  }
+  #status.run { border-color: rgba(255,193,7,.5); color: #ffd54f; }
+  #status.ok  { border-color: rgba(0,176,80,.5); color: #6fe89a; }
+  #status.err { border-color: rgba(227,6,19,.6); color: #ff7b82; }
+  .spin { display: inline-block; animation: sp 1s linear infinite; }
+  @keyframes sp { to { transform: rotate(360deg); } }
+
+  /* Formularios desplegables (añadir / quitar) */
+  .fold { display: none; margin: 0 0 8px; }
+  .fold.open { display: block; }
+  .form {
+    background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08);
+    border-radius: 12px; padding: 11px;
+  }
+  .form label { font-size: 11px; color: #9aa0aa; display: block; margin: 0 0 3px; }
+  .form .row { display: flex; gap: 8px; }
+  .form .row > div { flex: 1; }
+  .form input, .form select {
+    width: 100%; padding: 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,.12);
+    background: #11141c; color: #fff; font-family: 'DM Sans', sans-serif; font-size: 13px;
+    margin-bottom: 8px;
+  }
+  .form .btn { margin-bottom: 0; }
+  .form .btn + .btn { margin-top: 8px; }
+
+  /* Lista de soportes a quitar */
+  .reten-list { margin: 8px 0 0; }
+  .reten-item {
+    display: flex; align-items: flex-start; gap: 9px; padding: 8px 9px; margin-bottom: 6px;
+    background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.09); border-radius: 9px;
+    font-size: 12px; line-height: 1.35;
+  }
+  .reten-item input { margin-top: 2px; width: 16px; height: 16px; flex-shrink: 0; accent-color: #e30613; }
+  .reten-item .tag { color: #8a8f99; }
+  .reten-item .sent { color: #6fe89a; font-weight: 700; }
+
+  /* Botones de envío por tienda */
+  .btn.send { background: rgba(189,215,238,.10); border-color: rgba(189,215,238,.30); }
+  .btn.send:hover:not(:disabled) { background: rgba(189,215,238,.18); }
+  .btn.send i { color: #9ec7ff; }
+</style>
+</head>
+<body>
+  <div class="head">
+    <h1>PANEL <span>ARRASTRES</span></h1>
+    <p>TAISA · Leroy Merlin Málaga</p>
+  </div>
+
+  <!-- 1 PROCESAR -->
+  <div class="sec">
+    <div class="sec-title"><span class="n">1</span> PROCESAR</div>
+    <button class="btn" onclick="antequera()">
+      <i class="fa-solid fa-file-pdf"></i>
+      <span>Antequera: PDF → TOP<small>Sube los 2 PDF y vuelca a TOP</small></span>
+    </button>
+
+    <button class="btn" onclick="run(this,'abrirMecoZip')">
+      <i class="fa-solid fa-file-zipper"></i>
+      <span>Meco: ZIP → CCM + HODOS<small>Sustituye el pegado manual del ZIP de Meco</small></span>
+    </button>
+
+    <button class="btn" onclick="run(this,'abrirArrastreCsv')">
+      <i class="fa-solid fa-file-csv"></i>
+      <span>Arrastres: CSV → todo<small>Valencia / Torija — sustituye el pegado manual del CSV</small></span>
+    </button>
+
+    <button class="btn" onclick="run(this,'abrirRecepcionXlsx')">
+      <i class="fa-solid fa-file-excel"></i>
+      <span>Recepción: XLSX → todo<small>Sustituye el pegado manual del informe de facturación</small></span>
+    </button>
+
+    <button class="btn green" onclick="run(this,'procesarArrastres')">
+      <i class="fa-solid fa-circle-check"></i>
+      <span>Arrastres<small>Valencia · Torija · Antequera</small></span>
+    </button>
+
+    <button class="btn green" onclick="run(this,'procesarRecepcion')">
+      <i class="fa-solid fa-truck-ramp-box"></i>
+      <span>Pedido Recepción<small>Marcar pedidos a retener</small></span>
+    </button>
+
+    <div class="meco-box">
+      <div class="meco-row">
+        <div><label>Fecha llegada</label><input type="text" id="mecoFecha" placeholder="dd/mm/aaaa"></div>
+        <div><label>Hora</label>
+          <select id="mecoHora"><option>6:00</option><option>7:00</option><option>8:00</option></select>
+        </div>
+      </div>
+      <button class="btn green" onclick="runMeco(this)">
+        <i class="fa-solid fa-truck"></i>
+        <span>Meco<small>Solo aplica el formato</small></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 2 RETENIDOS -->
+  <div class="sec">
+    <div class="sec-title"><span class="n">2</span> RETENIDOS DEL DÍA</div>
+    <!-- Añadir -->
+    <button class="btn green" onclick="toggle('foldAdd',this)">
+      <i class="fa-solid fa-plus"></i><span>Añadir retenido</span>
+    </button>
+    <div class="fold" id="foldAdd">
+      <div class="form">
+        <div class="row">
+          <div><label>Tienda</label>
+            <select id="aTienda"><option>Málaga</option><option>Marbella</option><option>Mijas</option></select>
+          </div>
+          <div><label>Tipo</label>
+            <select id="aTipo"><option>Valencia</option><option>Torija</option><option>Antequera</option><option>Recepción de Portada</option><option>Recepción</option><option>Manual</option></select>
+          </div>
+        </div>
+        <div class="row">
+          <div><label>Pedido *</label><input type="text" id="aPedido"></div>
+          <div><label>Pyxis</label><input type="text" id="aPyxis"></div>
+        </div>
+        <div class="row">
+          <div><label>Agrupación</label><input type="text" id="aAgrup"></div>
+          <div><label>SSCC</label><input type="text" id="aSscc"></div>
+        </div>
+        <label>Expedición (opcional)</label><input type="text" id="aExped">
+        <button class="btn green" onclick="addReten(this)">
+          <i class="fa-solid fa-check"></i><span>Guardar en la lista</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Quitar -->
+    <button class="btn red" onclick="toggle('foldDel',this)">
+      <i class="fa-solid fa-minus"></i><span>Quitar soporte / pedido</span>
+    </button>
+    <div class="fold" id="foldDel">
+      <div class="form">
+        <div class="row">
+          <div><label>Tienda</label>
+            <select id="dTienda"><option>Málaga</option><option>Marbella</option><option>Mijas</option></select>
+          </div>
+          <div><label>Pedido</label><input type="text" id="dPedido"></div>
+        </div>
+        <button class="btn" onclick="buscarReten(this)">
+          <i class="fa-solid fa-magnifying-glass"></i><span>Buscar soportes</span>
+        </button>
+        <div class="reten-list" id="dList"></div>
+        <div id="dActions" style="display:none">
+          <button class="btn red" onclick="quitarSel(this)">
+            <i class="fa-solid fa-trash-can"></i><span>Quitar seleccionados</span>
+          </button>
+          <button class="btn red" onclick="quitarTodo(this)">
+            <i class="fa-solid fa-trash"></i><span>Quitar pedido completo</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn red" onclick="confirmRun(this,'vaciarRetenidos','¿Vaciar TODOS los retenidos del día?')">
+      <i class="fa-solid fa-eraser"></i><span>Vaciar todo</span>
+    </button>
+  </div>
+
+  <!-- 3 ENVIAR -->
+  <div class="sec">
+    <div class="sec-title"><span class="n">3</span> ENVIAR retenidos por correo</div>
+    <button class="btn send" onclick="enviar(this,'Málaga')">
+      <i class="fa-solid fa-paper-plane"></i><span>Enviar a Málaga</span>
+    </button>
+    <button class="btn send" onclick="enviar(this,'Marbella')">
+      <i class="fa-solid fa-paper-plane"></i><span>Enviar a Marbella</span>
+    </button>
+    <button class="btn send" onclick="enviar(this,'Mijas')">
+      <i class="fa-solid fa-paper-plane"></i><span>Enviar a Mijas</span>
+    </button>
+  </div>
+
+  <!-- 4 IMPRIMIR -->
+  <div class="sec">
+    <div class="sec-title"><span class="n">4</span> IMPRIMIR</div>
+    <button class="btn green" onclick="imprimir(this,'htmlImprimirPyxisArrastres')">
+      <i class="fa-solid fa-print"></i>
+      <span>Imprimir pedidos Pyxis arrastres</span>
+    </button>
+    <button class="btn green" onclick="imprimir(this,'htmlImprimirPyxisRecepcion')">
+      <i class="fa-solid fa-print"></i>
+      <span>Imprimir pedidos Pyxis recepción</span>
+    </button>
+    <button class="btn" onclick="imprimir(this,'htmlImprimirTOP')">
+      <i class="fa-solid fa-print"></i><span>Imprimir hoja TOP<small>Horizontal, a una página de ancho</small></span>
+    </button>
+    <button class="btn" onclick="imprimir(this,'htmlImprimirCaratula')">
+      <i class="fa-solid fa-file-invoice"></i><span>Solo carátula<small>Logo Taisa · origen · transporte · fecha</small></span>
+    </button>
+  </div>
+
+  <!-- 5 CACHÉS -->
+  <div class="sec">
+    <div class="sec-title"><span class="n">5</span> CACHÉS</div>
+    <button class="btn" onclick="run(this,'vaciarCacheCeramica')">
+      <i class="fa-solid fa-rotate"></i>
+      <span>Vaciar caché de cerámica<small>Tras editar la hoja CERAMICA (afecta a HODOS)</small></span>
+    </button>
+    <button class="btn" onclick="run(this,'vaciarCacheEAN')">
+      <i class="fa-solid fa-rotate"></i>
+      <span>Vaciar caché de EAN<small>Tras editar la hoja EAN (afecta a Arrastres)</small></span>
+    </button>
+  </div>
+
+  <!-- 6 CELDAS DEL LIBRO -->
+  <div class="sec">
+    <div class="sec-title"><span class="n">6</span> CELDAS DEL LIBRO</div>
+    <button class="btn" onclick="run(this,'diagnosticoCeldas')">
+      <i class="fa-solid fa-chart-simple"></i>
+      <span>Ver celdas reservadas por hoja<small>Diagnóstico del límite de 10M de Sheets</small></span>
+    </button>
+    <button class="btn green" onclick="run(this,'recortarHojasAlContenido')">
+      <i class="fa-solid fa-scissors"></i>
+      <span>Recortar hojas a su contenido<small>Libera celdas reservadas vacías (pide confirmación)</small></span>
+    </button>
+  </div>
+
+  <!-- 7 AUTOMATIZACIONES -->
+  <div class="sec">
+    <div class="sec-title"><span class="n">7</span> AUTOMATIZACIONES</div>
+    <button class="btn" onclick="confirmRun(this,'activarAutomatizaciones','Se activarán: importar portada (12:30), borrado nocturno (3:00), informe semanal (lunes 7:00) e informe mensual (día 1, 7:00). ¿Continuar?')">
+      <i class="fa-solid fa-clock"></i><span>Activar automatizaciones<small>Portada 12:30 · Borrado 3:00 · Informes (una sola vez)</small></span>
+    </button>
+    <button class="btn" onclick="confirmRun(this,'desactivarAutomatizaciones','¿Desactivar las automatizaciones?')">
+      <i class="fa-solid fa-stop"></i><span>Desactivar automatizaciones</span>
+    </button>
+    <button class="btn" onclick="run(this,'informeSemanal')">
+      <i class="fa-solid fa-chart-column"></i><span>Enviar informe semanal ahora<small>Prueba / envío manual</small></span>
+    </button>
+    <button class="btn" onclick="run(this,'informeMensual')">
+      <i class="fa-solid fa-chart-line"></i><span>Enviar informe mensual ahora<small>Prueba / envío manual</small></span>
+    </button>
+  </div>
+
+  <!-- 7 BORRAR -->
+  <div class="sec">
+    <div class="sec-title"><span class="n">8</span> BORRAR CONTENIDO</div>
+    <button class="btn red" onclick="confirmRun(this,'borrarTOP','¿Borrar el contenido de la hoja TOP?')">
+      <i class="fa-solid fa-eraser"></i><span>Borrar solo TOP<small>Limpia TOP para empezar otra carga</small></span>
+    </button>
+    <button class="btn red" onclick="confirmRun(this,'borrarTodo','¿Borrar TODO el contenido del día? (RETENIDOS, EAN y FAMILIAS se conservan)')">
+      <i class="fa-solid fa-broom"></i><span>Borrar todo el contenido<small>RETENIDOS se conservan</small></span>
+    </button>
+  </div>
+
+  <!-- 8 SUGERENCIAS -->
+  <div class="sec">
+    <div class="sec-title"><span class="n">9</span> SUGERENCIAS</div>
+    <button class="btn" onclick="sugerir()">
+      <i class="fa-solid fa-lightbulb"></i><span>Enviar sugerencia o fallo<small>Mejoras, ideas o errores · con foto opcional</small></span>
+    </button>
+  </div>
+
+  <div id="status">Listo.</div>
+
+<script>
+  function setStatus(txt, cls) {
+    var s = document.getElementById('status');
+    s.className = cls || '';
+    s.innerHTML = txt;
+  }
+  function lock(btn, on) {
+    document.querySelectorAll('.btn').forEach(function(b){ b.disabled = on; });
+    if (on && btn) btn.dataset._lbl = btn.querySelector('span').innerHTML;
+  }
+  function run(btn, fn, args) {
+    lock(btn, true);
+    setStatus('<i class="fa-solid fa-spinner spin"></i> Procesando…', 'run');
+    var call = google.script.run
+      .withSuccessHandler(function(r){ lock(btn, false); setStatus('✅ ' + (r || 'Hecho.'), 'ok'); })
+      .withFailureHandler(function(e){ lock(btn, false); setStatus('⚠️ ' + e.message, 'err'); });
+    if (args) call[fn].apply(call, args); else call[fn]();
+  }
+  function runMeco(btn) {
+    var f = document.getElementById('mecoFecha').value.trim();
+    var h = document.getElementById('mecoHora').value;
+    if (!f) { setStatus('⚠️ Pon la fecha de llegada.', 'err'); return; }
+    run(btn, 'procesarMeco', [f, h]);
+  }
+  function confirmRun(btn, fn, msg) {
+    if (confirm(msg)) run(btn, fn);
+  }
+
+  // Abre el diálogo de Antequera (PDF -> TOP)
+  function antequera() {
+    setStatus('📦 Abriendo Antequera…', '');
+    google.script.run
+      .withFailureHandler(function(e){ setStatus('⚠️ ' + e.message, 'err'); })
+      .abrirAntequera();
+  }
+
+  // Abre el formulario de sugerencias (diálogo modal sobre la hoja)
+  function sugerir() {
+    setStatus('💡 Abriendo formulario de sugerencias…', '');
+    google.script.run
+      .withFailureHandler(function(e){ setStatus('⚠️ ' + e.message, 'err'); })
+      .abrirSugerencias();
+  }
+
+  // Impresión directa: el servidor devuelve el HTML y aquí abrimos la ventana de impresión.
+  function imprimir(btn, fn) {
+    lock(btn, true);
+    setStatus('<i class="fa-solid fa-spinner spin"></i> Preparando impresión…', 'run');
+    // La ventana se abre YA, en el mismo clic del usuario: si se abre después de que
+    // vuelva la respuesta del servidor, el navegador ya no lo cuenta como gesto del
+    // usuario y bloquea la ventana en silencio (se queda "Preparando impresión…" para siempre).
+    var w = window.open('', '_blank');
+    if (!w) { lock(btn, false); setStatus('⚠️ Permite las ventanas emergentes para imprimir.', 'err'); return; }
+    google.script.run
+      .withSuccessHandler(function(r){
+        lock(btn, false);
+        if (!r || r.error) { w.close(); setStatus('⚠️ ' + ((r && r.error) || 'Nada que imprimir.'), 'err'); return; }
+        w.document.open(); w.document.write(r.html); w.document.close();
+        setStatus('🖨️ ' + (r.n || '') + ' enviado(s) a impresión.', 'ok');
+      })
+      .withFailureHandler(function(e){ lock(btn, false); w.close(); setStatus('⚠️ ' + e.message, 'err'); })
+      [fn]();
+  }
+
+  function val(id){ return document.getElementById(id).value.trim(); }
+  function escH(s){
+    return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function toggle(id, btn) {
+    var el = document.getElementById(id);
+    var open = el.classList.toggle('open');
+    var ic = btn && btn.querySelector('i');
+    if (ic && id === 'foldAdd') ic.className = open ? 'fa-solid fa-chevron-up' : 'fa-solid fa-plus';
+    if (ic && id === 'foldDel') ic.className = open ? 'fa-solid fa-chevron-up' : 'fa-solid fa-minus';
+  }
+
+  function addReten(btn) {
+    if (!val('aPedido')) { setStatus('⚠️ El Pedido es obligatorio.', 'err'); return; }
+    lock(btn, true);
+    setStatus('<i class="fa-solid fa-spinner spin"></i> Añadiendo…', 'run');
+    google.script.run
+      .withSuccessHandler(function(m){
+        lock(btn, false); setStatus('✅ ' + m, 'ok');
+        ['aPedido','aPyxis','aAgrup','aSscc','aExped'].forEach(function(id){ document.getElementById(id).value=''; });
+      })
+      .withFailureHandler(function(e){ lock(btn, false); setStatus('⚠️ ' + e.message, 'err'); })
+      .anadirRetenido(val('aTienda'), val('aTipo'), val('aPedido'), val('aPyxis'), val('aAgrup'), val('aSscc'), val('aExped'));
+  }
+
+  function buscarReten(btn) {
+    if (!val('dPedido')) { setStatus('⚠️ Escribe un pedido.', 'err'); return; }
+    lock(btn, true);
+    setStatus('<i class="fa-solid fa-spinner spin"></i> Buscando…', 'run');
+    google.script.run
+      .withSuccessHandler(function(items){ lock(btn, false); pintarLista(items); })
+      .withFailureHandler(function(e){ lock(btn, false); setStatus('⚠️ ' + e.message, 'err'); })
+      .listarRetenidosPedido(val('dTienda'), val('dPedido'));
+  }
+
+  function pintarLista(items) {
+    var cont = document.getElementById('dList');
+    var act = document.getElementById('dActions');
+    if (!items || !items.length) {
+      cont.innerHTML = '<div class="reten-item">Sin soportes para ese pedido en esa tienda.</div>';
+      act.style.display = 'none';
+      setStatus('Sin resultados.', '');
+      return;
+    }
+    cont.innerHTML = items.map(function(it){
+      var info = 'Pyxis ' + escH(it.pyxis || '—') + ' · SSCC ' + escH(it.sscc || '—') +
+                 ' · <span class="tag">' + escH(it.tipo) + '</span>';
+      if (it.dia) info += ' · Día ' + escH(it.dia);
+      if (it.expedicion) info += '<br>Exped: ' + escH(it.expedicion);
+      if (it.enviado) info += '<br><span class="sent">' + escH(it.enviado) + '</span>';
+      return '<label class="reten-item"><input type="checkbox" data-key="' + escH(it.key) + '"><span>' + info + '</span></label>';
+    }).join('');
+    act.style.display = 'block';
+    setStatus(items.length + ' soporte(s). Marca los que ya no retienes.', 'ok');
+  }
+
+  function clavesMarcadas() {
+    return Array.prototype.slice.call(document.querySelectorAll('#dList input:checked'))
+      .map(function(c){ return c.getAttribute('data-key'); });
+  }
+  function quitarSel(btn) {
+    var ks = clavesMarcadas();
+    if (!ks.length) { setStatus('⚠️ No has marcado ningún soporte.', 'err'); return; }
+    if (!confirm('¿Quitar ' + ks.length + ' soporte(s) del pedido ' + val('dPedido') + '?')) return;
+    lock(btn, true);
+    setStatus('<i class="fa-solid fa-spinner spin"></i> Quitando…', 'run');
+    google.script.run
+      .withSuccessHandler(function(n){ setStatus('✅ ' + n + ' soporte(s) quitado(s).', 'ok'); buscarReten(btn); })
+      .withFailureHandler(function(e){ lock(btn, false); setStatus('⚠️ ' + e.message, 'err'); })
+      .quitarSoportes(val('dTienda'), val('dPedido'), ks);
+  }
+  function quitarTodo(btn) {
+    if (!val('dPedido')) { setStatus('⚠️ Escribe un pedido.', 'err'); return; }
+    if (!confirm('¿Quitar TODO el pedido ' + val('dPedido') + ' de ' + val('dTienda') + '?')) return;
+    lock(btn, true);
+    setStatus('<i class="fa-solid fa-spinner spin"></i> Quitando…', 'run');
+    google.script.run
+      .withSuccessHandler(function(n){
+        lock(btn, false); setStatus('✅ ' + n + ' línea(s) quitada(s).', 'ok');
+        document.getElementById('dList').innerHTML = '';
+        document.getElementById('dActions').style.display = 'none';
+      })
+      .withFailureHandler(function(e){ lock(btn, false); setStatus('⚠️ ' + e.message, 'err'); })
+      .quitarPedido(val('dTienda'), val('dPedido'));
+  }
+
+  function enviar(btn, tienda, forzar) {
+    lock(btn, true);
+    setStatus('<i class="fa-solid fa-spinner spin"></i> Enviando a ' + tienda + '…', 'run');
+    google.script.run
+      .withSuccessHandler(function(r){
+        lock(btn, false);
+        if (r.estado === 'sin_pendientes') {
+          var m = 'No hay pedidos de HOY pendientes de enviar en ' + tienda + '.';
+          if (r.otroDia) m += ' (' + r.otroDia + ' pendiente(s) para otro día, esperan)';
+          setStatus(m, '');
+        } else if (r.estado === 'falta_expedicion') {
+          if (confirm('Hay ' + r.sinExp + ' de ' + r.total + ' líneas SIN Expedición en ' + tienda + '.\n¿Enviar igualmente?')) {
+            enviar(btn, tienda, true);
+          } else {
+            setStatus('Envío cancelado. Rellena la Expedición y vuelve a enviar.', '');
+          }
+        } else {
+          setStatus('✅ ' + r.enviados + ' línea(s) enviada(s) a ' + tienda + ' · remitente ' + escH(r.remitente), 'ok');
+        }
+      })
+      .withFailureHandler(function(e){ lock(btn, false); setStatus('⚠️ ' + e.message, 'err'); })
+      .enviarRetenidosTienda(tienda, !!forzar);
+  }
+
+  // fecha de mañana por defecto en Meco
+  (function(){
+    var d = new Date(Date.now() + 86400000);
+    var dd = ('0'+d.getDate()).slice(-2), mm = ('0'+(d.getMonth()+1)).slice(-2);
+    document.getElementById('mecoFecha').value = dd + '/' + mm + '/' + d.getFullYear();
+  })();
+</script>
+</body>
+</html>

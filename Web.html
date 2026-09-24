@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html class="tema-black">
+<head>
+<base target="_top">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+  /* ===== TEMAS — 6, en <html> (no en <body>): así el fondo de TODA la
+     pantalla (incluidos los márgenes fuera de los 1800px del contenido)
+     cambia con el tema, no solo el recuadro central — antes se quedaba
+     negro alrededor aunque el tema fuera claro, porque las variables solo
+     estaban en <body> y html no las heredaba (las custom properties bajan
+     a los hijos, no suben a los padres). */
+  html.tema-black {
+    --color-bg: #080a10; --color-surface-solid: #11141c;
+    --color-surface: rgba(255,255,255,.03); --color-surface-hover: rgba(255,255,255,.08);
+    --color-border: rgba(255,255,255,.09);
+    --color-text: #f2f3f5; --color-text-muted: #9aa0aa; --color-text-dim: #6a707a;
+    --color-accent: #e30613; --color-success: #5be584; --color-danger: #ff5a63;
+    --color-info: #9ec7ff; --color-warn: #ffd54f;
+  }
+  html.tema-leroymerlin {
+    --color-bg: #f5f4ee; --color-surface-solid: #e9e6da;
+    --color-surface: #ece9dd; --color-surface-hover: #ddd8c6;
+    --color-border: #a89f80;
+    --color-text: #23281e; --color-text-muted: #5c6350; --color-text-dim: #838a74;
+    --color-accent: #3f7d32; --color-success: #2f7d43; --color-danger: #b03a2e;
+    --color-info: #35618f; --color-warn: #92660c;
+  }
+  html.tema-melocoton {
+    --color-bg: #f7ede2; --color-surface-solid: #efe0ce;
+    --color-surface: #f1e3d3; --color-surface-hover: #e6d0b8;
+    --color-border: #c19a72;
+    --color-text: #3c2f27; --color-text-muted: #7d6a5a; --color-text-dim: #9c8875;
+    --color-accent: #d97a5f; --color-success: #2f7d43; --color-danger: #b03a2e;
+    --color-info: #35618f; --color-warn: #92660c;
+  }
+  html.tema-lavanda {
+    --color-bg: #f0eaf8; --color-surface-solid: #e2d5f0;
+    --color-surface: #e5d9f0; --color-surface-hover: #d5c2e8;
+    --color-border: #a98fc7;
+    --color-text: #322a45; --color-text-muted: #6c6284; --color-text-dim: #8a8099;
+    --color-accent: #8768c2; --color-success: #2f7d43; --color-danger: #b03a2e;
+    --color-info: #35618f; --color-warn: #92660c;
+  }
+  html.tema-ambar {
+    --color-bg: #120d08; --color-surface-solid: #1d1610;
+    --color-surface: rgba(255,205,140,.045); --color-surface-hover: rgba(255,205,140,.1);
+    --color-border: rgba(255,195,120,.14);
+    --color-text: #f5efe8; --color-text-muted: #c9b8a3; --color-text-dim: #8f7c67;
+    --color-accent: #f59e0b; --color-success: #5be584; --color-danger: #ff5a63;
+    --color-info: #9ec7ff; --color-warn: #ffd54f;
+  }
+  html.tema-oceano {
+    --color-bg: #050f1a; --color-surface-solid: #0d1e2e;
+    --color-surface: rgba(160,215,255,.045); --color-surface-hover: rgba(160,215,255,.1);
+    --color-border: rgba(140,205,255,.14);
+    --color-text: #e9f4ff; --color-text-muted: #9fb8cc; --color-text-dim: #6b8299;
+    --color-accent: #0ea5c4; --color-success: #5be584; --color-danger: #ff6b6b;
+    --color-info: #7dd3fc; --color-warn: #ffd54f;
+  }
+  html.tema-esmeralda {
+    --color-bg: #06120c; --color-surface-solid: #0e1f16;
+    --color-surface: rgba(170,255,205,.045); --color-surface-hover: rgba(170,255,205,.1);
+    --color-border: rgba(140,230,180,.14);
+    --color-text: #eafff4; --color-text-muted: #9fcbb0; --color-text-dim: #6b9280;
+    --color-accent: #10b981; --color-success: #5be584; --color-danger: #ff6b6b;
+    --color-info: #9ec7ff; --color-warn: #ffd54f;
+  }
+  :root {
+    --color-accent-bg: color-mix(in srgb, var(--color-accent) 16%, var(--color-bg));
+    --color-accent-border: color-mix(in srgb, var(--color-accent) 45%, var(--color-bg));
+    --color-success-bg: color-mix(in srgb, var(--color-success) 18%, var(--color-bg));
+    --color-success-border: color-mix(in srgb, var(--color-success) 48%, var(--color-bg));
+    --color-info-bg: color-mix(in srgb, var(--color-info) 14%, var(--color-bg));
+    --color-info-border: color-mix(in srgb, var(--color-info) 40%, var(--color-bg));
+    --focus-ring: 0 0 0 3px color-mix(in srgb, var(--color-accent) 45%, transparent);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  *, .pick, button { -webkit-tap-highlight-color: transparent; }
+  html { background: var(--color-bg); min-height: 100%; }
+  body {
+    background: var(--color-bg); color: var(--color-text);
+    font-family: 'DM Sans', sans-serif;
+    padding: 16px 14px calc(40px + env(safe-area-inset-bottom, 0px));
+    padding-left: calc(14px + env(safe-area-inset-left, 0px));
+    padding-right: calc(14px + env(safe-area-inset-right, 0px));
+    max-width: 1800px; margin: 0 auto;
+    transition: background .2s, color .2s;
+  }
+  @media (min-width: 700px) {
+    body { padding-left: 28px; padding-right: 28px; padding-top: 22px; }
+  }
+  @media (min-width: 1100px) {
+    body { padding-left: 44px; padding-right: 44px; padding-top: 28px; }
+  }
+  a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, label:focus-visible {
+    outline: none; box-shadow: var(--focus-ring); border-radius: 8px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .spin { animation: none; }
+    .btn, .cajon label.pick, .pill, body { transition: none; }
+  }
+
+  .head { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
+  .head-logo {
+    background: #0c0e13; border-radius: 12px; padding: 6px 10px; display: flex; align-items: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,.25);
+  }
+  .head img { height: 52px; width: auto; display: block; }
+  @media (min-width: 700px) { .head img { height: 72px; } }
+  .head .tit h1 {
+    font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 2px;
+    line-height: 1; color: var(--color-text); text-align: left;
+  }
+  @media (min-width: 700px) { .head .tit h1 { font-size: 40px; } }
+  .head .tit h1 span { color: var(--color-accent); }
+  .head .tit p { font-size: 11px; color: var(--color-text-muted); letter-spacing: .5px; margin-top: 4px; }
+  .temas { display: flex; gap: 6px; margin-left: auto; flex-wrap: wrap; }
+  .tema-sw {
+    width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--color-border);
+    cursor: pointer; padding: 0; flex-shrink: 0; transition: transform .15s, border-color .15s;
+  }
+  .tema-sw:hover { transform: scale(1.12); }
+  .tema-sw.activo { border-color: var(--color-text); box-shadow: 0 0 0 2px var(--color-bg), 0 0 0 3px var(--color-text); }
+  .sw-black { background: #080a10; }
+  .sw-leroymerlin { background: linear-gradient(135deg,#3f7d32,#f5f4ee); }
+  .sw-melocoton { background: linear-gradient(135deg,#d97a5f,#f7ede2); }
+  .sw-lavanda { background: linear-gradient(135deg,#8768c2,#f0eaf8); }
+  .sw-ambar { background: #f59e0b; }
+  .sw-oceano { background: linear-gradient(135deg,#0ea5c4,#0b1f33); }
+  .sw-esmeralda { background: #10b981; }
+
+  /* Navegación por pestañas */
+  .tabs { display: flex; gap: 6px; margin-bottom: 16px; background: var(--color-surface);
+    border: 1px solid var(--color-border); border-radius: 12px; padding: 4px; }
+  .tab {
+    flex: 1; border: none; background: transparent; color: var(--color-text-muted);
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
+    padding: 10px 8px; min-height: 44px; border-radius: 9px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    touch-action: manipulation; transition: background .15s, color .15s;
+  }
+  .tab.active { background: var(--color-accent); color: #fff; }
+  .tab i { font-size: 14px; }
+  .tabpanel { display: none; }
+  .tabpanel.active { display: block; }
+
+  .sec { margin-bottom: 20px; }
+  .sec-title {
+    font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 1.5px;
+    color: var(--color-accent); margin: 0 2px 9px; display: flex; align-items: center; gap: 6px;
+    border-bottom: 1px solid var(--color-accent-border); padding-bottom: 6px;
+  }
+  .sec-title .n {
+    background: var(--color-accent); color: #fff; width: 18px; height: 18px; border-radius: 5px;
+    font-size: 11px; display: inline-flex; align-items: center; justify-content: center;
+    font-family: 'DM Sans', sans-serif; font-weight: 700;
+  }
+
+  .grid { display: grid; grid-template-columns: 1fr; gap: 9px; }
+  @media (min-width: 560px) { .grid.g2 { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); } }
+
+  .btn {
+    width: 100%; min-height: 44px; border: none; cursor: pointer; color: #fff;
+    background: var(--color-surface); border: 1px solid var(--color-border);
+    border-radius: 12px; padding: 13px 14px; margin-bottom: 8px;
+    font-family: 'DM Sans', sans-serif; font-size: 13.5px; font-weight: 500;
+    text-align: left; display: flex; align-items: center; gap: 11px; text-decoration: none;
+    transition: transform .12s, background .15s, border-color .15s;
+    touch-action: manipulation; color: var(--color-text);
+  }
+  .btn:hover:not(:disabled) { transform: translateY(-1px); background: var(--color-surface-hover); }
+  .btn:active:not(:disabled) { transform: translateY(0); }
+  .btn:disabled { opacity: .55; cursor: wait; }
+  .btn i { font-size: 17px; width: 22px; text-align: center; flex-shrink: 0; }
+  .btn small { display: block; font-size: 10.5px; color: var(--color-text-muted); font-weight: 400; margin-top: 1px; }
+
+  .btn.green { background: var(--color-success-bg); border-color: var(--color-success-border); color: var(--color-text); }
+  .btn.green:hover:not(:disabled) { background: color-mix(in srgb, var(--color-success) 26%, var(--color-bg)); }
+  .btn.green i { color: var(--color-success); }
+  .btn.red { background: var(--color-accent-bg); border-color: var(--color-accent-border); color: var(--color-text); }
+  .btn.red:hover:not(:disabled) { background: color-mix(in srgb, var(--color-accent) 24%, var(--color-bg)); }
+  .btn.red i { color: var(--color-danger); }
+  .btn.send { background: var(--color-info-bg); border-color: var(--color-info-border); color: var(--color-text); }
+  .btn.send:hover:not(:disabled) { background: color-mix(in srgb, var(--color-info) 20%, var(--color-bg)); }
+  .btn.send i { color: var(--color-info); }
+  .btn.half { width: auto; flex: 1; }
+
+  /* Color por tienda (cada tienda tiene su color asignado en la operativa):
+     Málaga verde · Marbella azul · Mijas morado · Granada naranja. Tinte suave
+     sobre el fondo del tema para que se lea bien en claro y en oscuro. */
+  .btn.tienda {
+    background: color-mix(in srgb, var(--th) 16%, var(--color-bg));
+    border-color: color-mix(in srgb, var(--th) 42%, var(--color-border));
+    color: var(--color-text);
+  }
+  .btn.tienda:hover:not(:disabled) { background: color-mix(in srgb, var(--th) 28%, var(--color-bg)); }
+  .btn.tienda i { color: var(--th); }
+  .tienda.malaga   { --th: #38b26e; }
+  .tienda.marbella { --th: #3f9be0; }
+  .tienda.mijas    { --th: #9a6ee0; }
+  .tienda.granada  { --th: #e79338; }
+
+  .cajon {
+    background: var(--color-surface); border: 1px solid var(--color-border);
+    border-radius: 12px; padding: 12px;
+    box-shadow: 0 1px 0 rgba(255,255,255,.02) inset, 0 6px 16px rgba(0,0,0,.12);
+  }
+  .cajon label.pick {
+    display: flex; align-items: center; gap: 9px; font-size: 12.5px; color: var(--color-text-muted);
+    border: 1.5px dashed var(--color-border); border-radius: 9px; padding: 10px;
+    min-height: 44px; cursor: pointer; margin-bottom: 9px; touch-action: manipulation;
+    transition: border-color .15s, background .15s;
+  }
+  .cajon label.pick:hover, .cajon label.pick:focus-visible { border-color: var(--color-accent); background: var(--color-accent-bg); }
+  .cajon label.pick i { color: var(--color-accent); font-size: 16px; }
+  .cajon label.pick.has-file { border-style: solid; border-color: var(--color-success-border); background: var(--color-success-bg); }
+  .cajon label.pick.has-file i { color: var(--color-success); }
+  .cajon input[type=file] { display: none; }
+  .cajon .fname { font-size: 11px; color: var(--color-text-dim); margin: -4px 0 9px 2px; }
+  .cajon .btn { margin-bottom: 0; }
+
+  .fold { display: none; margin: 8px 0 0; }
+  .fold.open { display: block; }
+  .form {
+    background: var(--color-surface); border: 1px solid var(--color-border);
+    border-radius: 12px; padding: 11px; max-width: 480px;
+  }
+  .form label { font-size: 11px; color: var(--color-text-muted); display: block; margin: 0 0 3px; }
+  .form .row { display: flex; gap: 8px; }
+  .form .row > div { flex: 1; }
+  .form input, .form select {
+    width: 100%; min-height: 44px; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--color-border);
+    background: var(--color-surface-solid); color: var(--color-text); font-family: 'DM Sans', sans-serif; font-size: 13px;
+    margin-bottom: 8px;
+  }
+  .form .btn { margin-bottom: 0; }
+  .form .btn + .btn { margin-top: 8px; }
+
+  /* Pastillas de tienda + buscador (tab Retenidos) */
+  .pills { display: flex; gap: 7px; margin-bottom: 12px; flex-wrap: wrap; }
+  .pill {
+    flex: 1; min-width: 90px; min-height: 44px; border: 1px solid var(--color-border); background: var(--color-surface);
+    color: var(--color-text-muted); font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
+    border-radius: 10px; cursor: pointer; touch-action: manipulation; transition: background .15s, color .15s, border-color .15s;
+  }
+  .pill.active { background: var(--color-accent-bg); border-color: var(--color-accent-border); color: var(--color-text); }
+  .pill .cnt { display: inline-block; margin-left: 5px; font-size: 10.5px; opacity: .8; }
+  /* Pills de tienda con su color asignado SIEMPRE presente (tinte tenue +
+     franja lateral, texto apagado — igual que cualquier pill inactiva). Al
+     activar sube mucho el contraste: fondo bien saturado, borde sólido y
+     texto fuerte + negrita — para que se note SIN dudar en qué pestaña
+     estás, no solo un matiz de color (pedido del equipo, 2026-09-11: "no se
+     ve en que pestañas estás actualmente"). Mismo código de color que los
+     botones "Enviar por correo". */
+  .pill.tienda {
+    background: color-mix(in srgb, var(--th) 10%, var(--color-surface));
+    border-color: color-mix(in srgb, var(--th) 30%, var(--color-border));
+    border-left: 3px solid var(--th);
+  }
+  .pill.tienda:hover:not(:disabled) { background: color-mix(in srgb, var(--th) 22%, var(--color-surface)); }
+  .pill.tienda.active {
+    background: color-mix(in srgb, var(--th) 55%, var(--color-bg));
+    border-color: var(--th);
+    border-left: 3px solid var(--th);
+    color: var(--color-text);
+    font-weight: 700;
+  }
+  .buscador { position: relative; margin-bottom: 12px; }
+  .buscador i { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: var(--color-text-dim); font-size: 13px; }
+  .buscador input {
+    width: 100%; min-height: 44px; padding: 0 12px 0 36px; border-radius: 10px; border: 1px solid var(--color-border);
+    background: var(--color-surface-solid); color: var(--color-text); font-family: 'DM Sans', sans-serif; font-size: 13px;
+  }
+  .filtros-reten { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .filtros-reten input, .filtros-reten select {
+    flex: 1; min-width: 140px; min-height: 44px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--color-border);
+    background: var(--color-surface-solid); color: var(--color-text); font-family: 'DM Sans', sans-serif; font-size: 13px;
+  }
+
+  .reten-list { margin: 0 0 10px; display: grid; grid-template-columns: 1fr; gap: 8px; }
+  @media (min-width: 640px) { .reten-list { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); } }
+  /* #retenLista (Retenidos) lleva UNA tabla ahora, no tarjetas — pero seguía
+     con el grid de columnas de 280px+ de cuando eran tarjetas. Un grid con
+     un único hijo más ancho que su pista lo corta justo ahí: el SSCC largo
+     se partía en dos SIEMPRE en el mismo punto, sin importar el contenido
+     (encontrado por fin, 2026-09-11 — gracias por el zoom). #hodosLista
+     (Hodos, sigue con tarjetas de verdad) no se toca. */
+  #retenLista { display: block; }
+  .reten-item {
+    display: flex; align-items: flex-start; gap: 10px; padding: 12px 13px;
+    background: var(--color-surface); border: 1px solid var(--color-border); border-left: 4px solid var(--tipo-color, var(--color-accent));
+    border-radius: 10px; font-size: 12.5px; line-height: 1.45;
+  }
+  .reten-item input[type=checkbox] { margin-top: 3px; width: 19px; height: 19px; flex-shrink: 0; accent-color: var(--color-accent); }
+  .reten-item .ped { font-weight: 800; color: var(--color-text); font-size: 16px; letter-spacing: .3px; }
+  .reten-item .chip-tipo {
+    display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: .3px; text-transform: uppercase;
+    padding: 2px 7px; border-radius: 6px; background: var(--tipo-color, var(--color-accent)); color: #fff; margin-left: 6px;
+  }
+  .reten-item .meta { color: var(--color-text-muted); margin-top: 3px; }
+  .reten-item .dia { display: inline-flex; align-items: center; gap: 4px; color: var(--color-info); font-weight: 600; margin-top: 5px; }
+  .reten-item .sent { display: inline-flex; align-items: center; gap: 4px; color: var(--color-success); font-weight: 700; margin-top: 5px; }
+  .reten-item .pend { display: inline-flex; align-items: center; gap: 4px; color: var(--color-warn); font-weight: 700; margin-top: 5px; }
+
+  /* Retenidos del día: listado en tabla (no tarjetas — pedido del equipo,
+     2026-09-11). SSCC visible siempre. Ancho propio con scroll horizontal
+     (no del body) si no cabe en móvil. */
+  .reten-table-wrap { margin-bottom: 10px; border: 1px solid var(--color-border); border-radius: 10px; }
+  /* table-layout:fixed partía cada número letra a letra (columnas iguales,
+     muy estrechas para el SSCC de 18 dígitos) — se veía roto. table-layout
+     AUTO: cada columna coge solo el ancho que su contenido necesita: con
+     1800px de body de sobra, las 10 columnas (todas las del Drive: Pedido,
+     Pyxis, Agrupación, SSCC, Tipo, Flete, Expedición, Día, Estado) caben sin
+     partir nada y sin scroll (pedido del equipo, 2026-09-11 / columnas
+     completas 2026-09-10). */
+  .reten-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  /* SOLO línea horizontal entre filas — nada de líneas verticales entre
+     columnas: con SSCC de 18 dígitos y filas con SSCC "—" en la MISMA
+     columna, auto-layout le da a la columna el ancho de su valor más largo,
+     así que las filas cortas dejan hueco de sobra antes del borde — con
+     línea vertical ahí, ese hueco se ve como una casilla vacía suelta
+     (parecía columna fantasma). Sin línea vertical, el hueco es hueco y
+     nada más (pedido del equipo, 2026-09-11: "la cuadrícula no está bien"). */
+  .reten-table th, .reten-table td { padding: 9px 16px 9px 12px; text-align: left; white-space: nowrap; vertical-align: middle; border-bottom: 1px solid var(--color-border); }
+  .reten-table th:first-child, .reten-table td:first-child { width: 34px; white-space: normal; }
+  .reten-table th.sscc-col, .reten-table td.sscc-col { min-width: 210px; }
+  .reten-table thead th { background: var(--color-surface-solid); color: var(--color-text-muted); font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: .3px; position: sticky; top: 0; }
+  .reten-table tbody tr:hover td { background: var(--color-surface-hover); }
+  .reten-table tbody tr:last-child td { border-bottom: none; }
+  .reten-table td.ped { font-weight: 800; color: var(--color-text); font-size: 13.5px; }
+  .reten-table input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--color-accent); vertical-align: middle; }
+  .reten-table .tipo-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+  .reten-table .sent { color: var(--color-success); font-weight: 700; white-space: nowrap; }
+  .reten-table .pend { color: var(--color-warn); font-weight: 700; white-space: nowrap; }
+  .reten-empty { grid-column: 1 / -1; font-size: 12.5px; color: var(--color-text-dim); padding: 26px; text-align: center; }
+
+  .accion-bar { display: none; gap: 8px; margin-bottom: 10px; }
+  .accion-bar.open { display: flex; flex-wrap: wrap; }
+  .accion-bar input[type=date], .accion-bar input[type=text] {
+    flex: 1; min-width: 130px; min-height: 44px; padding: 0 10px; border-radius: 10px;
+    border: 1px solid var(--color-border); background: var(--color-surface-solid); color: var(--color-text);
+    font-family: 'DM Sans', sans-serif; font-size: 13px;
+  }
+
+  /* Pestaña HODOS: lanzador (nada de iframe — Google bloquea la sesión por
+     cookies de terceros dentro de un iframe de otro origen la mayoría de las
+     veces; abrir en pestaña nueva es lo único fiable). */
+  .hodos-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+  .hodos-bar a { color: var(--color-info); font-size: 12.5px; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; }
+  .hodos-bar a:hover { text-decoration: underline; }
+  .hodos-toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  .hodos-toolbar .btn { margin-bottom: 0; }
+  .hodos-selall {
+    display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--color-text-muted);
+    cursor: pointer; white-space: nowrap; user-select: none;
+  }
+  .hodos-selall input { width: 18px; height: 18px; accent-color: var(--color-accent); cursor: pointer; }
+  .hodos-note-inline { font-size: 11px; color: var(--color-text-dim); margin-top: 10px; line-height: 1.5; }
+
+  /* Barra de estado: oculta salvo que haya algo que decir (antes se quedaba
+     con "Listo." fijo en todas las pestañas sin motivo). Éxito se autooculta;
+     toca la barra para descartarla en cualquier momento. */
+  #status {
+    display: none; position: sticky; bottom: calc(8px + env(safe-area-inset-bottom, 0px)); margin-top: 6px;
+    font-size: 12px; line-height: 1.4; cursor: pointer;
+    padding: 10px 12px; border-radius: 10px; min-height: 18px;
+    background: var(--color-surface-solid); border: 1px solid var(--color-border); color: var(--color-text-muted);
+    box-shadow: 0 4px 18px rgba(0,0,0,.25);
+  }
+  #status.show { display: block; }
+  #status.run { border-color: color-mix(in srgb, var(--color-warn) 60%, transparent); color: var(--color-warn); }
+  #status.ok  { border-color: var(--color-success-border); color: var(--color-success); }
+  #status.err { border-color: color-mix(in srgb, var(--color-danger) 65%, transparent); color: var(--color-danger); }
+  .spin { display: inline-block; animation: sp 1s linear infinite; }
+  @keyframes sp { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+  <div class="head">
+    <div class="head-logo"><img src="data:image/png;base64,<?= CFG.LOGO_TAISA_B64 ?>" alt="Taisa Logistics"></div>
+    <div class="tit">
+      <h1>PANEL <span>ARRASTRES</span></h1>
+      <p>TAISA · Leroy Merlin Málaga · web</p>
+    </div>
+    <div class="temas">
+      <button class="tema-sw sw-black activo" title="Negro" onclick="aplicarTema_('black')"></button>
+      <button class="tema-sw sw-leroymerlin" title="Leroy Merlin" onclick="aplicarTema_('leroymerlin')"></button>
+      <button class="tema-sw sw-melocoton" title="Melocotón" onclick="aplicarTema_('melocoton')"></button>
+      <button class="tema-sw sw-lavanda" title="Lavanda" onclick="aplicarTema_('lavanda')"></button>
+      <button class="tema-sw sw-ambar" title="Ámbar" onclick="aplicarTema_('ambar')"></button>
+      <button class="tema-sw sw-oceano" title="Océano" onclick="aplicarTema_('oceano')"></button>
+      <button class="tema-sw sw-esmeralda" title="Esmeralda" onclick="aplicarTema_('esmeralda')"></button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" id="tabBtnProcesar" onclick="cambiarTab('procesar')">
+      <i class="fa-solid fa-bolt"></i> Procesar
+    </button>
+    <button class="tab" id="tabBtnRetenidos" onclick="cambiarTab('retenidos')">
+      <i class="fa-solid fa-boxes-stacked"></i> Retenidos
+    </button>
+    <button class="tab" id="tabBtnHodos" onclick="cambiarTab('hodos')">
+      <i class="fa-solid fa-tags"></i> Hodos
+    </button>
+  </div>
+
+  <!-- ============================= TAB 1: AÑADIR PEDIDOS ============================= -->
+  <div class="tabpanel active" id="tabProcesar">
+    <div class="sec">
+      <div class="sec-title"><span class="n">1</span> AÑADIR PEDIDOS</div>
+
+      <div class="grid g2">
+        <div class="cajon" id="cajonAntequera">
+          <label class="pick" for="antFile"><i class="fa-solid fa-file-pdf"></i>
+            <span>Añadir Antequera<br><small style="color:var(--color-text-dim)">PDF · Detalle + Resumen de albaranes</small></span></label>
+          <input type="file" id="antFile" accept="application/pdf,.pdf" multiple>
+          <div class="fname" id="antFiles"></div>
+          <div id="antStats" style="display:none;font-size:11px;color:var(--color-text-dim);margin-bottom:8px"></div>
+          <button class="btn green" id="antGen"><i class="fa-solid fa-play"></i><span>Procesar Antequera</span></button>
+          <div id="antStatus" style="font-size:11px;color:var(--color-text-dim);margin-top:6px"></div>
+        </div>
+
+        <div class="cajon">
+          <label class="pick" for="csvArchivo"><i class="fa-solid fa-file-csv"></i>
+            <span>Añadir Valencia/Torija<br><small style="color:var(--color-text-dim)">CSV de arrastres</small></span></label>
+          <input type="file" id="csvArchivo" accept=".csv">
+          <div class="fname" id="csvNombre"></div>
+          <button class="btn green" onclick="subirCsv(this)"><i class="fa-solid fa-play"></i><span>Procesar Valencia/Torija</span></button>
+        </div>
+
+        <div class="cajon">
+          <label class="pick" for="mecoArchivo"><i class="fa-solid fa-file-zipper"></i>
+            <span>Añadir Meco<br><small style="color:var(--color-text-dim)">ZIP → CCM + HODOS</small></span></label>
+          <input type="file" id="mecoArchivo" accept=".zip">
+          <div class="fname" id="mecoNombre"></div>
+          <button class="btn green" onclick="subirMeco(this)"><i class="fa-solid fa-play"></i><span>Procesar Meco</span></button>
+        </div>
+
+        <div class="cajon">
+          <label class="pick" for="xlsxArchivo"><i class="fa-solid fa-file-excel"></i>
+            <span>Añadir Pedidos Recepción<br><small style="color:var(--color-text-dim)">XLSX · informe de facturación</small></span></label>
+          <input type="file" id="xlsxArchivo" accept=".xlsx">
+          <div class="fname" id="xlsxNombre"></div>
+          <button class="btn green" onclick="subirXlsx(this)"><i class="fa-solid fa-play"></i><span>Procesar Recepción</span></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title"><span class="n">2</span> IMPRIMIR</div>
+      <div class="grid g2">
+        <button class="btn green" onclick="imprimir(this,'htmlImprimirPyxisArrastres')">
+          <i class="fa-solid fa-print"></i>
+          <span>Imprimir pedidos Pyxis arrastres</span>
+        </button>
+        <button class="btn green" onclick="imprimir(this,'htmlImprimirPyxisRecepcion')">
+          <i class="fa-solid fa-print"></i>
+          <span>Imprimir pedidos Pyxis recepción</span>
+        </button>
+        <button class="btn" onclick="imprimir(this,'htmlImprimirTOP')">
+          <i class="fa-solid fa-print"></i><span>Imprimir hoja TOP<small>Horizontal, a una página de ancho</small></span>
+        </button>
+        <button class="btn" onclick="imprimir(this,'htmlImprimirCaratula')">
+          <i class="fa-solid fa-file-invoice"></i><span>Solo carátula<small>Logo Taisa · origen · transporte · fecha</small></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================= TAB 2: RETENIDOS DEL DÍA ============================= -->
+  <div class="tabpanel" id="tabRetenidos">
+    <div class="sec">
+      <div class="sec-title"><span class="n">1</span> RETENIDOS POR TIENDA</div>
+
+      <div class="pills">
+        <button class="pill tienda malaga active" id="pillMálaga" onclick="cambiarTienda('Málaga')">Málaga<span class="cnt" id="cntMálaga"></span></button>
+        <button class="pill tienda marbella" id="pillMarbella" onclick="cambiarTienda('Marbella')">Marbella<span class="cnt" id="cntMarbella"></span></button>
+        <button class="pill tienda mijas" id="pillMijas" onclick="cambiarTienda('Mijas')">Mijas<span class="cnt" id="cntMijas"></span></button>
+        <button class="pill tienda granada" id="pillGranada" onclick="cambiarTienda('Granada')">Granada<span class="cnt" id="cntGranada"></span></button>
+      </div>
+
+      <div class="buscador">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" id="retenBuscar" placeholder="Buscar por pedido, Pyxis, agrupación, SSCC, flete, expedición…" oninput="filtrarLista()">
+      </div>
+      <div class="filtros-reten">
+        <select id="filtroTipo" onchange="filtrarLista()">
+          <option value="">Todos los tipos</option>
+          <option>Valencia</option><option>Torija</option><option>Antequera</option>
+          <option>Recepción de Portada</option><option>Recepción</option><option>Manual</option>
+        </select>
+        <input type="date" id="filtroFecha" onchange="filtrarLista()">
+        <input type="text" id="filtroExped" placeholder="Filtrar por expedición" oninput="filtrarLista()">
+      </div>
+
+      <div class="reten-list" id="retenLista"><div class="reten-empty">Cargando…</div></div>
+
+      <div class="accion-bar" id="accionBar">
+        <button class="btn red half" onclick="quitarSeleccion()"><i class="fa-solid fa-trash-can"></i><span>Quitar</span></button>
+        <input type="date" id="fechaMover">
+        <button class="btn half" onclick="moverFecha()"><i class="fa-solid fa-calendar-days"></i><span>Mover fecha</span></button>
+        <input type="text" id="expedMover" placeholder="Nº Expedición">
+        <button class="btn half" onclick="moverExpedicion()"><i class="fa-solid fa-truck-field"></i><span>Añadir Expedición</span></button>
+      </div>
+
+      <button class="btn green" onclick="toggle('foldAdd',this)">
+        <i class="fa-solid fa-plus"></i><span>Añadir retenido</span>
+      </button>
+      <div class="fold" id="foldAdd">
+        <div class="form">
+          <div class="row">
+            <div><label>Tienda</label>
+              <select id="aTienda"><option>Málaga</option><option>Marbella</option><option>Mijas</option><option>Granada</option></select>
+            </div>
+            <div><label>Tipo</label>
+              <select id="aTipo"><option>Valencia</option><option>Torija</option><option>Antequera</option><option>Recepción de Portada</option><option>Recepción</option><option>Manual</option></select>
+            </div>
+          </div>
+          <div class="row">
+            <div><label>Pedido *</label><input type="text" id="aPedido"></div>
+            <div><label>Pyxis</label><input type="text" inputmode="numeric" id="aPyxis"></div>
+          </div>
+          <div class="row">
+            <div><label>Agrupación</label><input type="text" id="aAgrup"></div>
+            <div><label>SSCC</label><input type="text" inputmode="numeric" id="aSscc"></div>
+          </div>
+          <label>Expedición (opcional)</label><input type="text" id="aExped">
+          <button class="btn green" onclick="addReten(this)">
+            <i class="fa-solid fa-check"></i><span>Guardar en la lista</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title"><span class="n">2</span> ENVIAR POR CORREO</div>
+      <div class="grid g2">
+        <button class="btn tienda malaga" onclick="enviar(this,'Málaga')">
+          <i class="fa-solid fa-paper-plane"></i><span>Enviar a Málaga</span>
+        </button>
+        <button class="btn tienda marbella" onclick="enviar(this,'Marbella')">
+          <i class="fa-solid fa-paper-plane"></i><span>Enviar a Marbella</span>
+        </button>
+        <button class="btn tienda mijas" onclick="enviar(this,'Mijas')">
+          <i class="fa-solid fa-paper-plane"></i><span>Enviar a Mijas</span>
+        </button>
+        <button class="btn tienda granada" onclick="enviar(this,'Granada')">
+          <i class="fa-solid fa-paper-plane"></i><span>Enviar a Granada</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================= TAB 3: HODOS ============================= -->
+  <div class="tabpanel" id="tabHodos">
+    <div class="sec">
+      <div class="hodos-bar">
+        <div class="sec-title" style="margin:0;border:none;padding:0"><span class="n">3</span> ETIQUETAS EN HODOS</div>
+        <a href="<?= hodosUrl ?>" target="_blank" rel="noopener"><i class="fa-solid fa-up-right-from-square"></i> Abrir HODOS en pestaña nueva</a>
+      </div>
+
+      <div class="pills">
+        <button class="pill active" id="pillOrigenMeco" onclick="cambiarOrigenHodos('Meco')">Meco</button>
+        <button class="pill" id="pillOrigenValencia" onclick="cambiarOrigenHodos('Valencia')">Valencia</button>
+        <button class="pill" id="pillOrigenTorija" onclick="cambiarOrigenHodos('Torija')">Torija</button>
+        <button class="pill" id="pillOrigenAntequera" onclick="cambiarOrigenHodos('Antequera')">Antequera</button>
+      </div>
+
+      <div class="hodos-toolbar">
+        <button class="btn half" onclick="cargarEtiquetasHodos()"><i class="fa-solid fa-rotate"></i><span>Actualizar lista</span></button>
+        <label class="hodos-selall"><input type="checkbox" id="hodosSelAll" onchange="seleccionarTodoHodos(this.checked)"> Seleccionar todo</label>
+      </div>
+
+      <div class="reten-list" id="hodosLista"><div class="reten-empty">Cargando…</div></div>
+
+      <div class="accion-bar" id="hodosAccionBar">
+        <button class="btn green half" onclick="imprimirEtiquetasHodos()"><i class="fa-solid fa-print"></i><span>Imprimir</span></button>
+        <button class="btn red half" onclick="borrarSeleccionHodos()"><i class="fa-solid fa-trash-can"></i><span>Borrar seleccionadas</span></button>
+      </div>
+
+      <button class="btn" onclick="marcarImpresasHodos()">
+        <i class="fa-solid fa-circle-check"></i><span>Marcar TODAS como impresas<small>Del origen seleccionado</small></span>
+      </button>
+
+      <p class="hodos-note-inline">Se lee y se escribe en HODOS de verdad (mismo webhook que ya usa el envío automático de etiquetas). Si algo falla aquí, "Abrir HODOS en pestaña nueva" arriba siempre funciona.</p>
+    </div>
+  </div>
+
+  <div id="status" onclick="ocultarStatus()">Listo.</div>
+
+<script>
+  // ---------- Temas (6, en <html>) ----------
+  var TEMAS_ = ['black','leroymerlin','melocoton','lavanda','ambar','oceano','esmeralda'];
+  function aplicarTema_(tema) {
+    document.documentElement.className = 'tema-' + tema;
+    document.querySelectorAll('.tema-sw').forEach(function(b){
+      b.classList.toggle('activo', b.classList.contains('sw-' + tema));
+    });
+    try { localStorage.setItem('panelArrastresTema', tema); } catch (e) {}
+  }
+  (function () {
+    var guardado = null;
+    try { guardado = localStorage.getItem('panelArrastresTema'); } catch (e) {}
+    if (guardado && TEMAS_.indexOf(guardado) !== -1) aplicarTema_(guardado);
+  })();
+
+  // ---------- helpers compartidos ----------
+  var statusTimer = null;
+  function setStatus(txt, cls) {
+    var s = document.getElementById('status');
+    clearTimeout(statusTimer);
+    s.className = (cls || '') + ' show';
+    s.innerHTML = txt;
+    if (cls === 'ok') { statusTimer = setTimeout(function(){ s.classList.remove('show'); }, 4000); }
+  }
+  function ocultarStatus() { document.getElementById('status').classList.remove('show'); }
+  function lock(btn, on) {
+    document.querySelectorAll('.btn, .pill').forEach(function(b){ b.disabled = on; });
+  }
+  function val(id){ return document.getElementById(id).value.trim(); }
+  function escH(s){
+    return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function toggle(id, btn) {
+    var el = document.getElementById(id);
+    var open = el.classList.toggle('open');
+    var ic = btn && btn.querySelector('i');
+    if (ic) ic.className = open ? 'fa-solid fa-chevron-up' : 'fa-solid fa-plus';
+  }
+
+  // ---------- Pestañas ----------
+  var tabsCargadas = {};
+  function cambiarTab(nombre) {
+    ['procesar','retenidos','hodos'].forEach(function(t){
+      var activo = t === nombre;
+      document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1)).classList.toggle('active', activo);
+      document.getElementById('tabBtn' + t.charAt(0).toUpperCase() + t.slice(1)).classList.toggle('active', activo);
+    });
+    if (nombre === 'retenidos' && !tabsCargadas.retenidos) { tabsCargadas.retenidos = true; cargarTienda(); }
+    if (nombre === 'hodos' && !tabsCargadas.hodos) { tabsCargadas.hodos = true; cargarEtiquetasHodos(); }
+  }
+
+  // ---------- 1. Cajones ----------
+  function leerArchivoBase64(inputId, cb) {
+    var input = document.getElementById(inputId);
+    if (!input.files.length) { setStatus('⚠️ Elige un archivo primero.', 'err'); return; }
+    var archivo = input.files[0];
+    var lector = new FileReader();
+    lector.onload = function () { cb(lector.result.split(',')[1], archivo.name); };
+    lector.readAsDataURL(archivo);
+  }
+  function marcarArchivoElegido(inputId) {
+    var input = document.getElementById(inputId);
+    var nombre = document.getElementById(inputId.replace('Archivo', 'Nombre'));
+    var pick = input.closest('.cajon').querySelector('label.pick');
+    var icono = pick.querySelector('i');
+    if (icono) icono.dataset.iconoOrig = icono.className;
+    input.addEventListener('change', function () {
+      var f = this.files[0];
+      if (nombre) nombre.textContent = f ? f.name : '';
+      pick.classList.toggle('has-file', !!f);
+      if (icono) icono.className = f ? 'fa-solid fa-circle-check' : icono.dataset.iconoOrig;
+    });
+  }
+  marcarArchivoElegido('mecoArchivo');
+  marcarArchivoElegido('csvArchivo');
+  marcarArchivoElegido('xlsxArchivo');
+
+  function subirMeco(btn) {
+    leerArchivoBase64('mecoArchivo', function(base64, nombre) {
+      lock(btn, true);
+      setStatus('<i class="fa-solid fa-spinner spin"></i> Leyendo ZIP de Meco…', 'run');
+      var w = window.open('', '_blank');
+      google.script.run
+        .withSuccessHandler(function(r){
+          lock(btn, false);
+          if (r.faltan && r.faltan.length) { if (w) w.close(); setStatus('⚠️ Faltan archivos en el ZIP: ' + r.faltan.join(', '), 'err'); return; }
+          var msg = 'CCM listo para imprimir.';
+          if (r.hodos && r.hodos.errorConfig) msg += ' ⚠️ HODOS: ' + r.hodos.errorConfig;
+          else if (r.hodos) {
+            msg += ' HODOS: ' + r.hodos.ok.length + ' tienda(s) OK';
+            if (r.hodos.fallidos.length) msg += ' · fallaron: ' + r.hodos.fallidos.map(function(f){ return f.destino + ' (' + f.error + ')'; }).join(', ');
+          }
+          setStatus('✅ ' + msg, 'ok');
+          if (r.htmlImpresion && w) { w.document.open(); w.document.write(r.htmlImpresion); w.document.close(); }
+          else if (w) { w.close(); }
+        })
+        .withFailureHandler(function(e){ lock(btn, false); if (w) w.close(); setStatus('⚠️ ' + e.message, 'err'); })
+        .procesarZipMeco(base64, nombre);
+    });
+  }
+
+  function subirCsv(btn) {
+    leerArchivoBase64('csvArchivo', function(base64, nombre) {
+      lock(btn, true);
+      setStatus('<i class="fa-solid fa-spinner spin"></i> Leyendo CSV de arrastres…', 'run');
+      var w = window.open('', '_blank');
+      google.script.run
+        .withSuccessHandler(function(r){
+          lock(btn, false);
+          if (r.error) { if (w) w.close(); setStatus('⚠️ ' + r.error, 'err'); return; }
+          var msg = r.plataforma + ' procesada. ' + r.resumenProceso;
+          if (r.filasDescartadas) msg += ' (' + r.filasDescartadas + ' fila(s) descartada(s) por ancho incorrecto)';
+          setStatus('✅ ' + msg, 'ok');
+          if (r.htmlImpresion && w) { w.document.open(); w.document.write(r.htmlImpresion); w.document.close(); }
+          else if (w) { w.close(); }
+        })
+        .withFailureHandler(function(e){ lock(btn, false); if (w) w.close(); setStatus('⚠️ ' + e.message, 'err'); })
+        .procesarCsvArrastreWeb(base64, nombre);
+    });
+  }
+
+  function subirXlsx(btn) {
+    leerArchivoBase64('xlsxArchivo', function(base64, nombre) {
+      lock(btn, true);
+      setStatus('<i class="fa-solid fa-spinner spin"></i> Leyendo XLSX de recepción…', 'run');
+      var w = window.open('', '_blank');
+      google.script.run
+        .withSuccessHandler(function(r){
+          lock(btn, false);
+          if (r.error) { if (w) w.close(); setStatus('⚠️ ' + r.error, 'err'); return; }
+          setStatus('✅ ' + r.resumenProceso, 'ok');
+          if (r.htmlImpresion && w) { w.document.open(); w.document.write(r.htmlImpresion); w.document.close(); }
+          else if (w) { w.close(); }
+        })
+        .withFailureHandler(function(e){ lock(btn, false); if (w) w.close(); setStatus('⚠️ ' + e.message, 'err'); })
+        .procesarXlsxRecepcionWeb(base64, nombre);
+    });
+  }
+
+  // ---------- Antequera (PDF, parseado en el navegador con pdf.js) ----------
+  (function () {
+    var WORKER = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    var TIENDAS = { '279':'Mijas', '36':'Málaga', '14':'Marbella' };
+    var COLS_RESUMEN = [
+      {key:'fecha', hdr:'FECHA'}, {key:'exp', hdr:'FLETE'}, {key:'cliente', hdr:'CLIENTE'},
+      {key:'albaran', hdr:'ALBARAN'}, {key:'flujo', hdr:'FLUJO'}, {key:'referencia', hdr:'REFERENCIA'},
+      {key:'reflm', hdr:'REFLM'}, {key:'ean', hdr:'EAN13'}, {key:'linea', hdr:'LINEA'},
+      {key:'unidades', hdr:'UNIDADES'}, {key:'cajas', hdr:'CAJAS'}, {key:'soporte', hdr:'SOPORTE'},
+      {key:'mensaje', hdr:'MENSAJE'}
+    ];
+    var COLS_DETALLE = [
+      {key:'urg', hdr:'URG'}, {key:'flujo', hdr:'FLUJO'}, {key:'seccion', hdr:'SECCION'},
+      {key:'pedido', hdr:'PEDIDO'}, {key:'tipo', hdr:'TIPO'}, {key:'contenido', hdr:'CONTENIDO'},
+      {key:'puestoen', hdr:'PUESTO'}, {key:'entrega', hdr:'ENTREGA'}, {key:'mensaje', hdr:'MENSAJE'}
+    ];
+    var topRows = [];
+    var cache = null;
+
+    function $(id){ return document.getElementById(id); }
+    // También refleja en la barra global (antes solo se veía un texto gris
+    // de 11px bajo el botón — fácil de no ver, parecía que el botón se
+    // quedaba "pensando" sin motivo aunque el PDF ya se hubiera leído).
+    function setStatusAnt(t, cls){
+      $('antStatus').textContent = t;
+      setStatus((cls === 'err' ? '⚠️ ' : cls === 'ok' ? '✅ ' : '<i class="fa-solid fa-spinner spin"></i> ') + t, cls || 'run');
+    }
+    // Marcas diacríticas combinadas: SIEMPRE por código numérico
+    // (String.fromCharCode + RegExp constructor), nunca como carácter
+    // Unicode suelto dentro de un literal regex /[...]/: ese carácter se
+    // corrompe si el archivo se sirve con un charset distinto de UTF-8
+    // (visto en el servidor de pruebas local) y el rango sale invertido ->
+    // "Range out of order in character class" -> un error de sintaxis en un
+    // literal regex aborta el parseo del <script> ENTERO — ninguna función
+    // de la página queda definida. Por código numérico esto no puede pasar:
+    // son solo dígitos ASCII.
+    var DIACRITICOS_RE_ = new RegExp('[' + String.fromCharCode(0x300) + '-' + String.fromCharCode(0x36f) + ']', 'g');
+    function norm(s){ return String(s==null?'':s).normalize('NFD').replace(DIACRITICOS_RE_,'').toUpperCase().trim(); }
+
+    function linesFromItems(items){
+      items = items.filter(function(it){ return it.str && it.str.trim()!==''; });
+      items.sort(function(a,b){ return b.y - a.y || a.x - b.x; });
+      var lines=[], curY=null, tol=3, cur=null;
+      items.forEach(function(it){
+        if (curY===null || Math.abs(it.y-curY) > tol){ cur=[]; lines.push(cur); curY=it.y; }
+        cur.push(it);
+      });
+      lines.forEach(function(l){ l.sort(function(a,b){ return a.x-b.x; }); });
+      return lines;
+    }
+    async function extractLines(arrayBuffer){
+      var pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
+      var all = [];
+      for (var p=1; p<=pdf.numPages; p++){
+        var page = await pdf.getPage(p);
+        var tc = await page.getTextContent();
+        var items = tc.items.map(function(it){ return { x: it.transform[4], y: it.transform[5], str: it.str }; });
+        all = all.concat(linesFromItems(items));
+      }
+      return all;
+    }
+    function buildAnchors(items, colspec){
+      var anchors=[];
+      colspec.forEach(function(c){
+        var found=null;
+        for (var i=0;i<items.length;i++){
+          var s = norm(items[i].str);
+          if (s===c.hdr || s.indexOf(c.hdr)===0){ found=items[i]; break; }
+        }
+        if (found) anchors.push({key:c.key, x:found.x});
+      });
+      anchors.sort(function(a,b){ return a.x-b.x; });
+      return anchors;
+    }
+    function bucketize(items, anchors){
+      var bounds=[];
+      for (var i=1;i<anchors.length;i++) bounds.push((anchors[i-1].x + anchors[i].x)/2);
+      var row={};
+      anchors.forEach(function(a){ row[a.key]=''; });
+      items.forEach(function(it){
+        var ci=0;
+        while (ci<bounds.length && it.x>=bounds[ci]) ci++;
+        var key = anchors[ci].key;
+        row[key] = (row[key] ? row[key]+' ' : '') + it.str.trim();
+      });
+      Object.keys(row).forEach(function(k){ row[k]=row[k].trim(); });
+      return row;
+    }
+    function parseTable(allLines, colspec, isHeader, isData){
+      var anchors=null, rows=[];
+      for (var i=0;i<allLines.length;i++){
+        var items = allLines[i];
+        var joined = norm(items.map(function(t){ return t.str; }).join(' '));
+        if (!anchors){ if (isHeader(joined)) anchors = buildAnchors(items, colspec); continue; }
+        if (isHeader(joined)) continue;
+        if (joined.indexOf('HOJA')>=0 || joined.indexOf('FINAL')>=0) continue;
+        var row = bucketize(items, anchors);
+        if (isData(row)) rows.push(row);
+      }
+      return rows;
+    }
+    function classify(allLines){
+      var all = norm(allLines.map(function(l){ return l.map(function(t){return t.str;}).join(' '); }).join(' '));
+      if (all.indexOf('RESUMEN ALBARANES')>=0 || (all.indexOf('EAN13')>=0 && all.indexOf('SOPORTE')>=0)) return 'resumen';
+      if (all.indexOf('DETALLE DE LOS CONTENIDOS')>=0 || (all.indexOf('CONTENIDO')>=0 && all.indexOf('PUESTO')>=0)) return 'detalle';
+      return null;
+    }
+    function estadoDe(entrega){
+      var e = norm(entrega);
+      if (e.indexOf('YA ENTREGADO')>=0) return 'ya';
+      if (e.indexOf('NO ENTREGADO')>=0) return 'no';
+      return '';
+    }
+    function tiendaDe(cliente){
+      var d = String(cliente||'').replace(/\D/g,'');
+      return TIENDAS[d] || TIENDAS[String(parseInt(d,10))] || cliente;
+    }
+    function cabeceraDetalle(detLines){
+      var txt = norm(detLines.slice(0,30).map(function(l){ return l.map(function(t){return t.str;}).join(' '); }).join(' '));
+      var t = txt.match(/E(\d{3})/);
+      var e = txt.match(/EXPEDICION[:\s]*0*(\d{3,7})/);
+      return { tiendaCode: t ? ('E'+t[1]) : '', exp: e ? e[1] : '' };
+    }
+    function construir(detalleRows, resumenRows, excluir, cabDet){
+      var exp='', tienda='';
+      if (resumenRows && resumenRows.length){ exp = String(resumenRows[0].exp||'').replace(/^0+/,''); tienda = tiendaDe(resumenRows[0].cliente); }
+      if (!exp && cabDet) exp = String(cabDet.exp||'').replace(/^0+/,'');
+      if (!tienda && cabDet && cabDet.tiendaCode) tienda = tiendaDe(cabDet.tiendaCode);
+      var rows=[], st={det:detalleRows.length, ls:0, cc:0, conPyx:0, sinPyx:0, excl:0};
+      detalleRows.forEach(function(d){
+        var est = estadoDe(d.entrega);
+        if (excluir && est==='ya'){ st.excl++; return; }
+        var pp = String(d.pedido||'').split('/');
+        var ped = (pp[0]||'').trim(), pyx = (pp[1]||'').trim();
+        // Sin "/" y de 6 dígitos exactos: es el Pyxis, no el Pedido (Pegase) —
+        // van a la columna equivocada y el cotejo con TOM nunca casa (pedido
+        // real, 2026-09-10). El Pegase siempre tiene más dígitos.
+        if (!pyx && /^\d{6}$/.test(ped)) { pyx = ped; ped = ''; }
+        var sop = (/^\d{4,}$/.test(d.contenido||'')) ? d.contenido : (d.puestoen||'');
+        var fl = norm(d.flujo);
+        if (fl==='LS') st.ls++; else if (fl==='CC') st.cc++;
+        if (pyx) st.conPyx++; else st.sinPyx++;
+        rows.push({ origen:'Antequera', exp:exp, tienda:tienda, pedido:ped, pyxis:pyx, flujo:fl, soporte:sop,
+          referencia:'', ean:'', unidades:'', estado: est==='ya'?'Ya entregado':(est==='no'?'No entregado':''), seccion: d.seccion||'' });
+      });
+      return { rows:rows, st:st };
+    }
+
+    var fileInput = $('antFile');
+    fileInput.addEventListener('change', function(){ procesarPdf(fileInput.files); });
+
+    // Solo se deshabilita MIENTRAS trabaja (leyendo el PDF o enviando), nunca
+    // en reposo por no tener PDF aún — igual que los otros 3 botones (Meco,
+    // CSV, XLSX), que siempre están clicables y avisan si falta el archivo
+    // en vez de quedarse apagados sin explicación (parecía roto/en bucle).
+    function lockAnt(on){ $('antGen').disabled = on; }
+
+    async function procesarPdf(fileList){
+      var files = Array.prototype.slice.call(fileList).filter(function(f){ return /\.pdf$/i.test(f.name) || f.type==='application/pdf'; });
+      if (!files.length){ setStatusAnt('No hay PDF. Sube al menos el "Detalle de contenidos".', 'err'); return; }
+      if (!window.pdfjsLib){ setStatusAnt('No se pudo cargar pdf.js (¿sin conexión?).', 'err'); return; }
+      pdfjsLib.GlobalWorkerOptions.workerSrc = WORKER;
+      setStatusAnt('Leyendo PDF…');
+      topRows = []; lockAnt(true);
+      $('antFiles').textContent = files.map(function(f){ return f.name; }).join(', ');
+      try {
+        var clasif = { resumen:null, detalle:null };
+        for (var i=0;i<files.length;i++){
+          var buf = await files[i].arrayBuffer();
+          var lines = await extractLines(buf.slice(0));
+          var tipo = classify(lines);
+          if (tipo==='resumen') clasif.resumen = lines;
+          else if (tipo==='detalle') clasif.detalle = lines;
+        }
+        if (!clasif.detalle){ setStatusAnt('Falta el "Detalle de contenidos" (el que trae el PEDIDO de cada soporte).', 'err'); return; }
+        var detalleRows = parseTable(clasif.detalle, COLS_DETALLE,
+          function(j){ return j.indexOf('PEDIDO')>=0 && j.indexOf('CONTENIDO')>=0; },
+          function(r){ return String(r.pedido||'')!=='' && (/^\d{4,}$/.test(r.contenido||'') || /^\d{4,}$/.test(r.puestoen||'')); });
+        var resumenRows = clasif.resumen ? parseTable(clasif.resumen, COLS_RESUMEN,
+          function(j){ return j.indexOf('REFERENCIA')>=0 && j.indexOf('SOPORTE')>=0; },
+          function(r){ return /^\d{5,}$/.test(r.soporte||''); }) : [];
+        cache = { detalleRows: detalleRows, resumenRows: resumenRows, cabDet: cabeceraDetalle(clasif.detalle), faltaResumen: !clasif.resumen };
+        var out = construir(cache.detalleRows, cache.resumenRows, true, cache.cabDet);
+        topRows = out.rows;
+        lockAnt(false);
+        if (!topRows.length){ setStatusAnt('No salió ninguna línea del Detalle. Revisa el PDF.', 'err'); return; }
+        var aviso = cache.faltaResumen ? ' (sin Resumen: tienda/exp salen de la cabecera del Detalle)' : '';
+        setStatusAnt(topRows.length + ' líneas listas' + aviso + '. Pulsa "Procesar Antequera".', 'ok');
+        $('antStats').style.display = 'block';
+        $('antStats').textContent = out.st.det + ' líneas · ' + out.st.conPyx + ' con Pyxis · ' + out.st.sinPyx + ' sin Pyxis (van por TOM) · ' + out.st.ls + ' LS · ' + out.st.cc + ' CC';
+      } catch (err) {
+        lockAnt(false);
+        setStatusAnt('Error leyendo el PDF: ' + (err && err.message ? err.message : err), 'err');
+      }
+    }
+
+    $('antGen').addEventListener('click', function () {
+      if (!topRows.length) { setStatus('⚠️ Sube el PDF de Antequera primero (o espera a que termine de leerlo).', 'err'); return; }
+      var mapaResumen = {};
+      var rr = (cache && cache.resumenRows) || [];
+      rr.forEach(function(r){
+        var ref = String(r.referencia||'').trim(), sop = String(r.soporte||'').trim();
+        if (ref && sop && !mapaResumen[ref]) mapaResumen[ref] = sop;
+      });
+      lockAnt(true);
+      setStatus('<i class="fa-solid fa-spinner spin"></i> Volcando ' + topRows.length + ' líneas de Antequera en TOP…', 'run');
+      var w = window.open('', '_blank');
+      google.script.run
+        .withSuccessHandler(function(){
+          setStatus('<i class="fa-solid fa-spinner spin"></i> Procesando arrastres…', 'run');
+          google.script.run
+            .withSuccessHandler(function(r){
+              lockAnt(false);
+              if (!r || r.error) { if (w) w.close(); setStatus('⚠️ ' + ((r && r.error) || 'Error al procesar.'), 'err'); return; }
+              setStatus('✅ ' + r.mensaje, 'ok');
+              $('antStatus').textContent = 'Añadido y procesado.'; // solo el texto local; la barra global ya lleva el resumen real de arriba
+              if (r.htmlImpresion && w) { w.document.open(); w.document.write(r.htmlImpresion); w.document.close(); }
+              else if (w) { w.close(); }
+            })
+            .withFailureHandler(function(e){ lockAnt(false); if (w) w.close(); setStatus('⚠️ ' + e.message, 'err'); })
+            .procesarArrastresWeb();
+        })
+        .withFailureHandler(function(e){ lockAnt(false); if (w) w.close(); setStatus('⚠️ ' + e.message, 'err'); })
+        .volcarAntequeraTOP(topRows, mapaResumen);
+    });
+  })();
+
+  // ---------- 2. Retenidos por tienda (vista visual + buscador) ----------
+  var tiendas = ['Málaga', 'Marbella', 'Mijas', 'Granada'];
+  var coloresTipo = {
+    'Valencia': '#3b82f6', 'Torija': '#8b5cf6', 'Antequera': '#f59e0b',
+    'Recepción': '#10b981', 'Recepción de Portada': '#14b8a6', 'Manual': '#64748b'
+  };
+  var tiendaActual = 'Málaga';
+  var itemsActuales = [];
+
+  function cambiarTienda(t) {
+    tiendaActual = t;
+    tiendas.forEach(function(x){ document.getElementById('pill' + x).classList.toggle('active', x === t); });
+    ['retenBuscar','filtroTipo','filtroFecha','filtroExped'].forEach(function(id){ document.getElementById(id).value = ''; });
+    cargarTienda();
+  }
+
+  function cargarTienda() {
+    document.getElementById('retenLista').innerHTML = '<div class="reten-empty"><i class="fa-solid fa-spinner spin"></i> Cargando…</div>';
+    document.getElementById('accionBar').classList.remove('open');
+    google.script.run
+      .withSuccessHandler(function(items){ itemsActuales = items || []; document.getElementById('cnt' + tiendaActual).textContent = itemsActuales.length ? ' (' + itemsActuales.length + ')' : ''; filtrarLista(); })
+      .withFailureHandler(function(e){ setStatus('⚠️ ' + e.message, 'err'); document.getElementById('retenLista').innerHTML = '<div class="reten-empty">Error al cargar.</div>'; })
+      .listarRetenidosTienda(tiendaActual);
+    tiendas.forEach(function(t){
+      if (t === tiendaActual) return;
+      google.script.run.withSuccessHandler(function(items){ document.getElementById('cnt' + t).textContent = items.length ? ' (' + items.length + ')' : ''; }).listarRetenidosTienda(t);
+    });
+  }
+
+  // Filtros combinados: texto libre + tipo (plataforma) + fecha + expedición.
+  // "Seleccionar todo" (cabecera de la tabla) marca solo lo que está
+  // RENDERIZADO tras filtrar — así "todo Valencia" es: filtra por tipo
+  // Valencia, luego Seleccionar todo.
+  function filtrarLista() {
+    var q = val('retenBuscar').toLowerCase();
+    var tipo = val('filtroTipo');
+    var fechaIso = val('filtroFecha'); // yyyy-mm-dd del <input type=date>
+    var fecha = fechaIso ? fechaIso.split('-').reverse().join('/') : ''; // -> dd/mm/aaaa (como viene "dia")
+    var exped = val('filtroExped').toLowerCase();
+    var filtrados = itemsActuales.filter(function(it){
+      if (tipo && it.tipo !== tipo) return false;
+      if (fecha && it.dia !== fecha) return false;
+      if (exped && (it.expedicion||'').toLowerCase().indexOf(exped) === -1) return false;
+      if (q && (it.pedido||'').toLowerCase().indexOf(q) === -1 &&
+        (it.pyxis||'').toLowerCase().indexOf(q) === -1 &&
+        (it.agrupacion||'').toLowerCase().indexOf(q) === -1 &&
+        (it.sscc||'').toLowerCase().indexOf(q) === -1 &&
+        (it.flete||'').toLowerCase().indexOf(q) === -1 &&
+        (it.expedicion||'').toLowerCase().indexOf(q) === -1) return false;
+      return true;
+    });
+    renderLista(filtrados);
+  }
+
+  function seleccionarTodoFiltrado(marcar) {
+    document.querySelectorAll('#retenLista tbody input[type=checkbox]').forEach(function(c){ c.checked = marcar; });
+    actualizarBarraAcciones();
+  }
+
+  // Listado en tabla (no tarjetas — pedido del equipo, 2026-09-11): SSCC
+  // siempre visible, una fila por soporte, checkbox para las acciones en
+  // bloque de abajo (quitar / mover fecha / añadir expedición).
+  function renderLista(items) {
+    var cont = document.getElementById('retenLista');
+    if (!items.length) {
+      cont.innerHTML = '<div class="reten-empty">' + (itemsActuales.length ? 'Nada coincide con la búsqueda.' : ('Sin retenidos en ' + escH(tiendaActual) + '.')) + '</div>';
+      return;
+    }
+    var filas = items.map(function(it){
+      var color = coloresTipo[it.tipo] || '#e30613';
+      var estado = it.enviado
+        ? '<span class="sent"><i class="fa-solid fa-circle-check"></i> ' + escH(it.enviado) + '</span>'
+        : '<span class="pend"><i class="fa-solid fa-clock"></i> Pendiente</span>';
+      return '<tr>' +
+        '<td><input type="checkbox" data-key="' + escH(it.key) + '" onchange="actualizarBarraAcciones()"></td>' +
+        '<td class="ped">' + escH(it.pedido) + '</td>' +
+        '<td>' + escH(it.pyxis || '—') + '</td>' +
+        '<td>' + escH(it.agrupacion || '—') + '</td>' +
+        '<td class="sscc-col">' + escH(it.sscc || '—') + '</td>' +
+        '<td><span class="tipo-dot" style="background:' + color + '"></span>' + escH(it.tipo) + '</td>' +
+        '<td>' + escH(it.flete || '—') + '</td>' +
+        '<td>' + escH(it.expedicion || '—') + '</td>' +
+        '<td>' + escH(it.dia || '—') + '</td>' +
+        '<td>' + estado + '</td>' +
+      '</tr>';
+    }).join('');
+    cont.innerHTML = '<div class="reten-table-wrap"><table class="reten-table"><thead><tr>' +
+      '<th><input type="checkbox" title="Seleccionar todo lo filtrado" onchange="seleccionarTodoFiltrado(this.checked)"></th>' +
+      '<th>Pedido</th><th>Pyxis</th><th>Agrupación</th><th class="sscc-col">SSCC</th><th>Tipo</th><th>Flete</th><th>Expedición</th><th>Día</th><th>Estado</th>' +
+      '</tr></thead><tbody>' + filas + '</tbody></table></div>';
+  }
+
+  function clavesMarcadas() {
+    return Array.prototype.slice.call(document.querySelectorAll('#retenLista input:checked'))
+      .map(function(c){ return c.getAttribute('data-key'); });
+  }
+  function actualizarBarraAcciones() {
+    document.getElementById('accionBar').classList.toggle('open', clavesMarcadas().length > 0);
+  }
+
+  function quitarSeleccion() {
+    var ks = clavesMarcadas();
+    if (!ks.length) { setStatus('⚠️ No has marcado ningún soporte.', 'err'); return; }
+    if (!confirm('¿Quitar ' + ks.length + ' soporte(s) de ' + tiendaActual + '?')) return;
+    setStatus('<i class="fa-solid fa-spinner spin"></i> Quitando…', 'run');
+    google.script.run
+      .withSuccessHandler(function(n){ setStatus('✅ ' + n + ' soporte(s) quitado(s).', 'ok'); cargarTienda(); })
+      .withFailureHandler(function(e){ setStatus('⚠️ ' + e.message, 'err'); })
+      .quitarClaves(tiendaActual, ks);
+  }
+
+  function moverFecha() {
+    var ks = clavesMarcadas();
+    if (!ks.length) { setStatus('⚠️ No has marcado ningún soporte.', 'err'); return; }
+    var iso = document.getElementById('fechaMover').value;
+    if (!iso) { setStatus('⚠️ Elige la fecha nueva.', 'err'); return; }
+    var p = iso.split('-');
+    var fecha = p[2] + '/' + p[1] + '/' + p[0];
+    setStatus('<i class="fa-solid fa-spinner spin"></i> Moviendo fecha…', 'run');
+    google.script.run
+      .withSuccessHandler(function(n){ setStatus('✅ ' + n + ' soporte(s) movido(s) a ' + fecha + '.', 'ok'); cargarTienda(); })
+      .withFailureHandler(function(e){ setStatus('⚠️ ' + e.message, 'err'); })
+      .moverFechaRetenidos(tiendaActual, ks, fecha);
+  }
+
+  function moverExpedicion() {
+    var ks = clavesMarcadas();
+    if (!ks.length) { setStatus('⚠️ No has marcado ningún soporte.', 'err'); return; }
+    var exp = val('expedMover');
+    if (!exp) { setStatus('⚠️ Escribe la expedición.', 'err'); return; }
+    setStatus('<i class="fa-solid fa-spinner spin"></i> Añadiendo expedición…', 'run');
+    google.script.run
+      .withSuccessHandler(function(n){ setStatus('✅ Expedición añadida a ' + n + ' soporte(s).', 'ok'); document.getElementById('expedMover').value = ''; cargarTienda(); })
+      .withFailureHandler(function(e){ setStatus('⚠️ ' + e.message, 'err'); })
+      .moverExpedicionRetenidos(tiendaActual, ks, exp);
+  }
+
+  function addReten(btn) {
+    if (!val('aPedido')) { setStatus('⚠️ El Pedido es obligatorio.', 'err'); return; }
+    lock(btn, true);
+    setStatus('<i class="fa-solid fa-spinner spin"></i> Añadiendo…', 'run');
+    google.script.run
+      .withSuccessHandler(function(m){
+        lock(btn, false); setStatus('✅ ' + m, 'ok');
+        ['aPedido','aPyxis','aAgrup','aSscc','aExped'].forEach(function(id){ document.getElementById(id).value=''; });
+        if (val('aTienda') === tiendaActual) cargarTienda();
+      })
+      .withFailureHandler(function(e){ lock(btn, false); setStatus('⚠️ ' + e.message, 'err'); })
+      .anadirRetenido(val('aTienda'), val('aTipo'), val('aPedido'), val('aPyxis'), val('aAgrup'), val('aSscc'), val('aExped'));
+  }
+
+  // ---------- Pestaña Hodos: gestión real de etiquetas de arrastres ----------
+  // (imprimir/marcar impresas/borrar) vía el mismo webhook que ya usa el
+  // envío automático — google.script.run no cruza de un proyecto de Apps
+  // Script a otro, así que MacroArrastres llama por HTTP (HodosGestion.gs).
+  var origenesHodos = ['Meco', 'Valencia', 'Torija', 'Antequera'];
+  var origenHodosActual = 'Meco';
+  var etiquetasHodosActuales = [];
+
+  function cambiarOrigenHodos(o) {
+    origenHodosActual = o;
+    origenesHodos.forEach(function(x){ document.getElementById('pillOrigen' + x).classList.toggle('active', x === o); });
+    cargarEtiquetasHodos();
+  }
+
+  function cargarEtiquetasHodos() {
+    document.getElementById('hodosLista').innerHTML = '<div class="reten-empty"><i class="fa-solid fa-spinner spin"></i> Cargando…</div>';
+    document.getElementById('hodosAccionBar').classList.remove('open');
+    document.getElementById('hodosSelAll').checked = false;
+    google.script.run
+      .withSuccessHandler(function(etiquetas){
+        etiquetasHodosActuales = etiquetas || [];
+        pintarEtiquetasHodos();
+      })
+      .withFailureHandler(function(e){ setStatus('⚠️ ' + e.message, 'err'); document.getElementById('hodosLista').innerHTML = '<div class="reten-empty">Error al cargar.</div>'; })
+      .listarEtiquetasHodos(origenHodosActual);
+  }
+
+  function pintarEtiquetasHodos() {
+    var cont = document.getElementById('hodosLista');
+    if (!etiquetasHodosActuales.length) {
+      cont.innerHTML = '<div class="reten-empty">Sin etiquetas pendientes de ' + escH(origenHodosActual) + '.</div>';
+      return;
+    }
+    cont.innerHTML = etiquetasHodosActuales.map(function(e){
+      return '<label class="reten-item">' +
+        '<input type="checkbox" data-id="' + escH(e.idUnico) + '" onchange="actualizarBarraAccionesHodos()">' +
+        '<span>' +
+          '<span class="ped">' + escH(e.numeroPedido || '—') + '</span><span class="chip-tipo">' + escH(e.destino || '') + '</span>' +
+          (e.soporteTotal > 1 ? '<div class="meta">Soporte ' + escH(e.soporteNum) + ' de ' + escH(e.soporteTotal) + '</div>' : '') +
+          (e.fechaCreacion ? '<div class="dia"><i class="fa-solid fa-calendar-day"></i> ' + escH(e.fechaCreacion) + '</div>' : '') +
+        '</span></label>';
+    }).join('');
+  }
+
+  function clavesMarcadasHodos() {
+    return Array.prototype.slice.call(document.querySelectorAll('#hodosLista input:checked'))
+      .map(function(c){ return c.getAttribute('data-id'); });
+  }
+  function actualizarBarraAccionesHodos() {
+    document.getElementById('hodosAccionBar').classList.toggle('open', clavesMarcadasHodos().length > 0);
+  }
+  function seleccionarTodoHodos(marcar) {
+    Array.prototype.slice.call(document.querySelectorAll('#hodosLista input[type=checkbox]'))
+      .forEach(function(c){ c.checked = marcar; });
+    actualizarBarraAccionesHodos();
+  }
+
+  function imprimirEtiquetasHodos() {
+    setStatus('<i class="fa-solid fa-spinner spin"></i> Preparando impresión…', 'run');
+    var w = window.open('', '_blank');
+    google.script.run
+      .withSuccessHandler(function(r){
+        if (!w) { setStatus('⚠️ Permite las ventanas emergentes para imprimir.', 'err'); return; }
+        w.document.open(); w.document.write(r.html); w.document.close();
+        setStatus('🖨️ Enviado a impresión.', 'ok');
+      })
+      .withFailureHandler(function(e){ if (w) w.close(); setStatus('⚠️ ' + e.message, 'err'); })
+      .htmlImprimirEtiquetasHodos(origenHodosActual);
+  }
+
+  function marcarImpresasHodos() {
+    if (!confirm('¿Marcar TODAS las etiquetas pendientes de ' + origenHodosActual + ' como impresas?')) return;
+    setStatus('<i class="fa-solid fa-spinner spin"></i> Marcando…', 'run');
+    google.script.run
+      .withSuccessHandler(function(r){ setStatus('✅ ' + (r.cantidad || 0) + ' etiqueta(s) marcada(s) como impresas.', 'ok'); cargarEtiquetasHodos(); })
+      .withFailureHandler(function(e){ setStatus('⚠️ ' + e.message, 'err'); })
+      .marcarImpresasEtiquetasHodos(origenHodosActual);
+  }
+
+  function borrarSeleccionHodos() {
+    var ids = clavesMarcadasHodos();
+    if (!ids.length) { setStatus('⚠️ No has marcado ninguna etiqueta.', 'err'); return; }
+    if (!confirm('¿Borrar ' + ids.length + ' etiqueta(s) de ' + origenHodosActual + '? Solo se borran las que aún no se han cargado en un camión.')) return;
+    setStatus('<i class="fa-solid fa-spinner spin"></i> Borrando…', 'run');
+    google.script.run
+      .withSuccessHandler(function(r){
+        var msg = r.borrados.length + ' borrada(s).';
+        if (r.rechazados && r.rechazados.length) msg += ' ' + r.rechazados.length + ' no se pudo(pudieron) borrar (ya cargada(s) en un camión).';
+        setStatus('✅ ' + msg, 'ok');
+        cargarEtiquetasHodos();
+      })
+      .withFailureHandler(function(e){ setStatus('⚠️ ' + e.message, 'err'); })
+      .borrarEtiquetasHodos(ids);
+  }
+
+  // ---------- 3. Envío por correo ----------
+  function enviar(btn, tienda, forzar) {
+    lock(btn, true);
+    setStatus('<i class="fa-solid fa-spinner spin"></i> Enviando a ' + tienda + '…', 'run');
+    google.script.run
+      .withSuccessHandler(function(r){
+        lock(btn, false);
+        if (r.estado === 'sin_pendientes') {
+          var m = 'No hay pedidos de HOY pendientes de enviar en ' + tienda + '.';
+          if (r.otroDia) m += ' (' + r.otroDia + ' pendiente(s) para otro día, esperan)';
+          setStatus(m, 'ok');
+        } else if (r.estado === 'falta_expedicion') {
+          if (confirm('Hay ' + r.sinExp + ' de ' + r.total + ' líneas SIN Expedición en ' + tienda + '.\n¿Enviar igualmente?')) {
+            enviar(btn, tienda, true);
+          } else {
+            setStatus('Envío cancelado. Rellena la Expedición y vuelve a enviar.', 'ok');
+          }
+        } else {
+          setStatus('✅ ' + r.enviados + ' línea(s) enviada(s) a ' + tienda + ' · remitente ' + escH(r.remitente), 'ok');
+          if (tienda === tiendaActual) cargarTienda();
+        }
+      })
+      .withFailureHandler(function(e){ lock(btn, false); setStatus('⚠️ ' + e.message, 'err'); })
+      .enviarRetenidosTienda(tienda, !!forzar);
+  }
+
+  // ---------- 4. Impresiones sueltas ----------
+  function imprimir(btn, fn) {
+    lock(btn, true);
+    setStatus('<i class="fa-solid fa-spinner spin"></i> Preparando impresión…', 'run');
+    var w = window.open('', '_blank');
+    if (!w) { lock(btn, false); setStatus('⚠️ Permite las ventanas emergentes para imprimir.', 'err'); return; }
+    google.script.run
+      .withSuccessHandler(function(r){
+        lock(btn, false);
+        if (!r || r.error) { w.close(); setStatus('⚠️ ' + ((r && r.error) || 'Nada que imprimir.'), 'err'); return; }
+        w.document.open(); w.document.write(r.html); w.document.close();
+        setStatus('🖨️ ' + (r.n || '') + ' enviado(s) a impresión.', 'ok');
+      })
+      .withFailureHandler(function(e){ lock(btn, false); w.close(); setStatus('⚠️ ' + e.message, 'err'); })
+      [fn]();
+  }
+</script>
+</body>
+</html>

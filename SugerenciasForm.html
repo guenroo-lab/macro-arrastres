@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_top">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #080a10; color: #f2f3f5;
+    font-family: 'DM Sans', sans-serif; padding: 16px 16px 18px;
+  }
+  .head { text-align: center; margin-bottom: 14px; }
+  .head h1 {
+    font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 1.5px;
+    line-height: 1; color: #fff;
+  }
+  .head h1 span { color: #e30613; }
+  .head p { font-size: 11px; color: #8a8f99; margin-top: 3px; }
+
+  label { font-size: 11px; color: #9aa0aa; display: block; margin: 10px 0 4px; }
+  select, textarea, input[type=file] {
+    width: 100%; padding: 9px; border-radius: 9px; border: 1px solid rgba(255,255,255,.12);
+    background: #11141c; color: #fff; font-family: 'DM Sans', sans-serif; font-size: 13px;
+  }
+  textarea { min-height: 130px; resize: vertical; line-height: 1.4; }
+  input[type=file] { padding: 8px; }
+
+  .cats { display: flex; gap: 8px; }
+  .cats label {
+    flex: 1; margin: 0; cursor: pointer; text-align: center; padding: 9px 4px;
+    border: 1px solid rgba(255,255,255,.12); border-radius: 9px; background: #11141c;
+    color: #c7ccd4; font-size: 12.5px; transition: .15s;
+  }
+  .cats input { display: none; }
+  .cats input:checked + span { color: #fff; font-weight: 700; }
+  .cats label:has(input:checked) { border-color: #e30613; background: rgba(227,6,19,.16); }
+
+  #preview { margin-top: 8px; display: none; }
+  #preview img { max-width: 100%; border-radius: 8px; border: 1px solid rgba(255,255,255,.12); }
+  .hint { font-size: 10.5px; color: #6a707a; margin-top: 4px; }
+
+  .btn {
+    width: 100%; border: none; cursor: pointer; color: #fff; margin-top: 14px;
+    background: rgba(0,176,80,.16); border: 1px solid rgba(0,176,80,.45);
+    border-radius: 11px; padding: 13px; font-family: 'DM Sans', sans-serif;
+    font-size: 14px; font-weight: 600; display: flex; align-items: center;
+    justify-content: center; gap: 9px; transition: .15s;
+  }
+  .btn:hover:not(:disabled) { background: rgba(0,176,80,.26); }
+  .btn:disabled { opacity: .55; cursor: wait; }
+
+  #status {
+    margin-top: 12px; font-size: 12px; line-height: 1.4; padding: 9px 11px;
+    border-radius: 9px; min-height: 16px; background: #11141c;
+    border: 1px solid rgba(255,255,255,.1); color: #c7ccd4;
+  }
+  #status.run { border-color: rgba(255,193,7,.5); color: #ffd54f; }
+  #status.ok  { border-color: rgba(0,176,80,.5); color: #6fe89a; }
+  #status.err { border-color: rgba(227,6,19,.6); color: #ff7b82; }
+  .spin { display: inline-block; animation: sp 1s linear infinite; }
+  @keyframes sp { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+  <div class="head">
+    <h1>SUGERENCIAS <span>Y MEJORAS</span></h1>
+    <p>Cuéntanos qué mejorarías o qué falla. ¡Nos ayuda mucho!</p>
+  </div>
+
+  <label>Tipo</label>
+  <div class="cats">
+    <label><input type="radio" name="cat" value="Sugerencia" checked><span>💡 Sugerencia</span></label>
+    <label><input type="radio" name="cat" value="Mejora"><span>⚙️ Mejora</span></label>
+    <label><input type="radio" name="cat" value="Fallo"><span>🐞 Fallo</span></label>
+  </div>
+
+  <label>Tu mensaje *</label>
+  <textarea id="texto" placeholder="Describe la sugerencia, mejora o el fallo con el mayor detalle posible…"></textarea>
+
+  <label>Adjuntar foto o recorte (opcional)</label>
+  <input type="file" id="imagen" accept="image/*">
+  <div class="hint">Una imagen. Máximo 10 MB.</div>
+  <div id="preview"><img id="previewImg" alt=""></div>
+
+  <button class="btn" id="send" onclick="enviar()">
+    <i class="fa-solid fa-paper-plane"></i> Enviar
+  </button>
+
+  <div id="status">Listo para enviar.</div>
+
+<script>
+  var fileInput = document.getElementById('imagen');
+  var preview = document.getElementById('preview');
+  var previewImg = document.getElementById('previewImg');
+  var dataUrl = null, fileName = '', fileType = '';
+
+  function setStatus(txt, cls) {
+    var s = document.getElementById('status');
+    s.className = cls || '';
+    s.innerHTML = txt;
+  }
+  function lock(on) {
+    document.getElementById('send').disabled = on;
+  }
+
+  fileInput.addEventListener('change', function () {
+    dataUrl = null; fileName = ''; fileType = '';
+    preview.style.display = 'none';
+    var f = fileInput.files[0];
+    if (!f) return;
+    if (f.size > 10 * 1024 * 1024) {
+      setStatus('⚠️ La imagen supera los 10 MB. Elige una más ligera o un recorte.', 'err');
+      fileInput.value = '';
+      return;
+    }
+    var reader = new FileReader();
+    reader.onload = function () {
+      dataUrl = reader.result;
+      fileName = f.name || 'captura.png';
+      fileType = f.type || 'image/png';
+      previewImg.src = dataUrl;
+      preview.style.display = 'block';
+      setStatus('Imagen lista para adjuntar.', '');
+    };
+    reader.readAsDataURL(f);
+  });
+
+  function catValue() {
+    var r = document.querySelector('input[name="cat"]:checked');
+    return r ? r.value : 'Sugerencia';
+  }
+
+  function enviar() {
+    var texto = document.getElementById('texto').value.trim();
+    if (!texto) { setStatus('⚠️ Escribe tu mensaje antes de enviar.', 'err'); return; }
+    lock(true);
+    setStatus('<i class="fa-solid fa-spinner spin"></i> Enviando…', 'run');
+
+    var payload = { categoria: catValue(), texto: texto };
+    if (dataUrl) {
+      payload.imagenBase64 = dataUrl.split(',')[1];
+      payload.imagenNombre = fileName;
+      payload.imagenTipo = fileType;
+    }
+
+    google.script.run
+      .withSuccessHandler(function (m) {
+        setStatus('✅ ' + m, 'ok');
+        setTimeout(function () { google.script.host.close(); }, 1300);
+      })
+      .withFailureHandler(function (e) { lock(false); setStatus('⚠️ ' + e.message, 'err'); })
+      .enviarSugerencia(payload);
+  }
+</script>
+</body>
+</html>

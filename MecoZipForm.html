@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    body { font-family: Arial, sans-serif; font-size: 13px; padding: 16px; }
+    #estado { margin-top: 12px; white-space: pre-wrap; }
+    .error { color: #c00; }
+    .ok { color: #2a7; }
+    button { margin-top: 12px; }
+  </style>
+</head>
+<body>
+  <p>Selecciona el ZIP de Meco (ej. <code>R-4416-BCW.zip</code>):</p>
+  <input type="file" id="archivo" accept=".zip">
+  <br><button onclick="procesar()">Procesar</button>
+  <div id="estado"></div>
+
+  <script>
+    function procesar() {
+      const input = document.getElementById('archivo');
+      const estado = document.getElementById('estado');
+      if (!input.files.length) { estado.textContent = 'Elige un archivo primero.'; return; }
+      const archivo = input.files[0];
+      estado.textContent = 'Leyendo y procesando…';
+
+      const lector = new FileReader();
+      lector.onload = function () {
+        const base64 = lector.result.split(',')[1]; // quita "data:application/zip;base64,"
+        google.script.run
+          .withSuccessHandler(mostrarResultado)
+          .withFailureHandler(function (err) { estado.innerHTML = '<span class="error">' + err.message + '</span>'; })
+          .procesarZipMeco(base64, archivo.name);
+      };
+      lector.readAsDataURL(archivo);
+    }
+
+    function mostrarResultado(r) {
+      const estado = document.getElementById('estado');
+      if (r.faltan.length) {
+        estado.innerHTML = '<span class="error">Faltan archivos en el ZIP:<br>' + r.faltan.join('<br>') + '</span>';
+        return;
+      }
+      let txt = '<span class="ok">CCM listo para imprimir.</span><br>';
+      if (r.hodos.errorConfig) {
+        txt += '<span class="error">HODOS: ' + r.hodos.errorConfig + '</span>';
+      } else {
+        txt += 'HODOS: ' + r.hodos.ok.length + ' tienda(s) OK';
+        if (r.hodos.fallidos.length) {
+          txt += '<br><span class="error">Fallaron: ' + r.hodos.fallidos.map(function (f) { return f.destino + ' (' + f.error + ')'; }).join(', ') + '</span>';
+        }
+      }
+      estado.innerHTML = txt;
+      const ventana = window.open('', '_blank');
+      ventana.document.write(r.htmlImpresion);
+    }
+  </script>
+</body>
+</html>
