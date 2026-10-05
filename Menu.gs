@@ -107,7 +107,10 @@ function _indicesTOM_(cabecera) {
     'Desc. Referencia': 'descReferencia',
     'Tipo línea': 'tipoLinea',
     'Cantidad': 'cantidad',
-    'Nº pedido proveedor': 'pegase'
+    'Nº pedido proveedor': 'pegase',
+    // Opcional (no está en TOM_DRIVE_COLUMNAS_MINIMAS): solo lo usa Antequera
+    // para no cruzar LM + unidades con pedidos de otra tienda.
+    'Nº Tienda': 'tienda'
   };
   const idx = {};
   for (let c = 0; c < cabecera.length; c++) {

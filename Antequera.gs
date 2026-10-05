@@ -20,6 +20,14 @@
  *   L(11)=Flujo · M(12)=Agrupación(vacío) · Q(16)=SSCC(soporte) · S(18)=LM(referencia) · W(22)=Unidades
  */
 
+/**
+ * ⚠️ VERSIÓN ANTIGUA (Detalle + TOM). La que usa Panel Arrastres desde 2026-10-05 es
+ * la v2: AntequeraPlan.gs (análisis desde el RESUMEN, con vista previa) +
+ * volcarAntequeraLineasTOP (más abajo). Esta antigua solo sigue viva para el diálogo del
+ * menú del Sheet (AntequeraForm.html) y PIERDE los palés preparados en Antequera (los que
+ * no traen Pegase en el Detalle) — no la uses para trabajo real; usa el Panel Arrastres.
+ */
+
 /** Abre el diálogo de Antequera (sirve desde el menú y desde el panel). */
 function abrirAntequera() {
   const html = HtmlService.createHtmlOutputFromFile('AntequeraForm')
@@ -69,9 +77,10 @@ function volcarAntequeraTOP(filas, mapaResumen) {
 
   // --- 1. Agrupar el Detalle por pedido (Pegase) ---
   const peds = {}, orden = [];
+  let descartadas = 0;   // contenidos sin Pegase (palés preparados en Antequera): esta versión antigua no los vuelca
   filas.forEach(f => {
     const ped = t_((f || {}).pedido);
-    if (ped === '') return;
+    if (ped === '') { descartadas++; return; }
     if (!peds[ped]) {
       peds[ped] = { pedido: ped, pyxis: t_(f.pyxis), flujo: t_(f.flujo),
         soporte: t_(f.soporte), exp: t_(f.exp), tienda: t_(f.tienda) };
@@ -158,6 +167,76 @@ function volcarAntequeraTOP(filas, mapaResumen) {
   if (tom.filas === 0) {
     msg = '⚠️ La hoja TOM está vacía: no se pudo sacar LM ni pedido cliente. Carga "Pedidos Vivos" en TOM y vuelve a generar. · ' + msg;
   }
+  if (descartadas) {
+    msg = '⚠️ ' + descartadas + ' palé(s) preparados en Antequera NO se han volcado (versión antigua). Usa el Panel Arrastres: ahí sí entran. · ' + msg;
+  }
   ss.toast(msg, '📦 Antequera', 12);
+  return msg;
+}
+
+/**
+ * ANTEQUERA v2 · vuelca en TOP las líneas del análisis (AntequeraPlan.gs): UNA FILA POR
+ * LÍNEA DEL RESUMEN, con el soporte real del palé. NO procesa: después se llama a
+ * procesarArrastresWeb (marca VERDE por Pyxis con transporte, registra retenidos y genera
+ * las etiquetas HODOS de Antequera).
+ *
+ * Columnas TOP (0-based, las mismas que lee Proceso_Arrastres.gs):
+ *   A(0)=Origen · B(1)=Expedición · G(6)=Tienda · J(9)=Pedido (Pegase; si no se conoce, el
+ *   Pyxis — J nunca puede ir vacía: ultimaFilaCol_ la usa para saber dónde acaba TOP) ·
+ *   K(10)=Pyxis · L(11)=Flujo · P(15) y Q(16)=Soporte (Q es el "SSCC" que se registra en
+ *   RETENIDOS: aquí el soporte del Resumen, el que lleva la etiqueta del palé) ·
+ *   S(18)=LM tal cual viene en el PDF (los códigos "48…" con sufijo los recorta el paso 0 de
+ *   procesarArrastres; si se recortaran aquí se recortarían dos veces) · U(20)=Artículo ·
+ *   W(22)=Unidades. La EAN (T) la rellena procesarArrastres.
+ */
+function volcarAntequeraLineasTOP(lineas) {
+  if (!lineas || !lineas.length) throw new Error('No hay líneas que volcar. Sube los PDF y revisa la vista previa.');
+  const malas = lineas.filter(l => !/^\d{5,}$/.test(t_((l || {}).soporte)));
+  if (malas.length) throw new Error('Hay ' + malas.length + ' línea(s) sin soporte. Vuelve a subir los PDF.');
+
+  const ANCHO = 23; // A..W
+  const ss = SpreadsheetApp.getActive();
+  const wsTOP = ss.getSheetByName(CFG.HOJAS.TOP);
+  if (!wsTOP) throw new Error('No existe la hoja "' + CFG.HOJAS.TOP + '".');
+
+  const cab = new Array(ANCHO).fill('');
+  cab[0] = 'Origen'; cab[1] = 'Exp'; cab[6] = 'Tienda'; cab[9] = 'Pedido'; cab[10] = 'Pyxis';
+  cab[11] = 'Flujo'; cab[12] = 'Agrupación'; cab[15] = 'Soporte'; cab[16] = 'SSCC';
+  cab[18] = 'LM'; cab[19] = 'EAN'; cab[20] = 'Articulo'; cab[22] = 'Unidades';
+
+  const matriz = [cab];
+  let sinPedido = 0;
+  const palets = {};
+  lineas.forEach(l => {
+    const fila = new Array(ANCHO).fill('');
+    fila[0]  = 'Antequera';
+    fila[1]  = t_(l.exp);
+    fila[6]  = t_(l.tienda);
+    fila[9]  = t_(l.pegase) || t_(l.pyxis) || 'SIN PEDIDO';
+    fila[10] = t_(l.pyxis);
+    fila[11] = t_(l.flujo) || 'CC';
+    // M (12) agrupación -> vacío (la regla LS-SIE exige M vacío)
+    fila[15] = t_(l.soporte);
+    fila[16] = t_(l.soporte);
+    fila[18] = t_(l.lmRaw);
+    fila[20] = t_(l.desc);
+    fila[22] = l.uds == null ? '' : t_(l.uds);
+    if (fila[10] === '') sinPedido++;
+    palets[fila[15]] = true;
+    matriz.push(fila);
+  });
+
+  const lastR = wsTOP.getLastRow();
+  const lastC = Math.max(wsTOP.getLastColumn(), ANCHO);
+  if (lastR > 0) wsTOP.getRange(1, 1, lastR, lastC).clear();
+  const rango = wsTOP.getRange(1, 1, matriz.length, ANCHO);
+  rango.setNumberFormat('@');                    // todo texto: no perder dígitos
+  rango.setValues(matriz);
+  wsTOP.getRange(1, 1, 1, ANCHO).setFontWeight('bold');
+  autoajustar_(wsTOP, 1, ANCHO);
+
+  const msg = 'Antequera OK · ' + Object.keys(palets).length + ' palés · ' + lineas.length + ' líneas en TOP' +
+    (sinPedido ? ' · ⚠️ ' + sinPedido + ' línea(s) SIN pedido (REVISAR)' : '') + '.';
+  ss.toast(msg, '📦 Antequera', 8);
   return msg;
 }

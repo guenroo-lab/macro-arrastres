@@ -106,6 +106,11 @@ function _procesarArrastresNucleoCalculo_() {
     if (id !== '' && !(id in dictTOM)) dictTOM[id] = i;
   }
 
+  // Transporte por PYXIS (TOM). Lo usa Antequera: se retiene el PEDIDO con transporte, y
+  // un Pegase de palé de tránsito puede agrupar varios pedidos de cliente (dictTOM guarda
+  // solo la primera fila de cada Pegase), así que ahí la clave no puede ser el Pegase.
+  const transportePyxis = _transportePorPyxis_(tom, uTOM, iTOM.pyxis, iTOM.transporte);
+
   // estado[i]: 'VERDE' | 'MORADO' | ''
   const estado = new Array(uTOP).fill('');
 
@@ -119,8 +124,12 @@ function _procesarArrastresNucleoCalculo_() {
     // CC2 nunca es VERDE: siempre va a tienda sin retener y siempre necesita
     // etiqueta HODOS, aunque su clave coincida por casualidad con un "SI" de
     // transporte en TOM (eso solo aplica al flujo normal, no a CC2).
+    // Antequera (2026-10-05): VERDE = el PYXIS de la línea tiene transporte en TOM.
     let esVerde = false;
     if (flujoUp === 'CCM') esVerde = true;
+    else if (t_(top[i][cA]) === 'Antequera') {
+      if (flujoUp !== 'CC2' && vK !== '' && transportePyxis[vK] === 'SI') esVerde = true;
+    }
     else if (flujoUp !== 'CC2' && llave in dictTOM && t_(tom[dictTOM[llave]][iTOM.transporte]).toUpperCase() === 'SI') esVerde = true;
 
     if (esVerde) {
@@ -304,7 +313,9 @@ function _procesarArrastresNucleoCalculo_() {
 
     const pedido = t_(fila[cJ]);
     const sscc = t_(fila[cQ]);
-    const claveRun = pedido + '|' + sscc;
+    // Antequera: un retenido por PEDIDO (Pyxis) y palé. Un palé de stock lleva varios
+    // pedidos con el mismo soporte, y su "Pedido" (J) puede ir repetido o ser el Pyxis.
+    const claveRun = t_(fila[cA]) === 'Antequera' ? 'A|' + (t_(fila[cK]) || pedido) + '|' + sscc : pedido + '|' + sscc;
     if (claveRun in dedupRun) continue;
     dedupRun[claveRun] = true;
 
@@ -333,7 +344,7 @@ function _procesarArrastresNucleoCalculo_() {
     (nSoportesBloqueados ? ' (' + nSoportesBloqueados + ' soportes LS con >2 artículos, no retenidos)' : '') +
     ' · ' + res.total + ' nuevos → ' + det +
     ' · HODOS: ' + hodos.filas + ' líneas (' + hodos.sinTransporte + ' cerámica sin transporte, ' +
-    hodos.cc2 + ' CC2, ' + hodos.ls + ' LS, ' + hodos.trameco + ' de TRAMECO)';
+    hodos.cc2 + ' CC2, ' + hodos.ls + ' LS, ' + (hodos.antequera ? hodos.antequera + ' Antequera, ' : '') + hodos.trameco + ' de TRAMECO)';
   if (hodos.sinCatalogo) {
     msg = '⚠️ Falta la hoja CERAMICA (catálogo de LM): HODOS solo trae los de TRAMECO. · ' + msg;
   }

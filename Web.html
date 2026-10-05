@@ -332,6 +332,36 @@
   .reten-table th.sscc-col, .reten-table td.sscc-col { min-width: 210px; }
   .reten-table thead th { background: var(--color-surface-solid); color: var(--color-text-muted); font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: .3px; position: sticky; top: 0; }
   .reten-table tbody tr:hover td { background: var(--color-surface-hover); }
+
+  /* Vista previa de Antequera (palé por palé: retener / etiqueta / revisar). Colores solo
+     con los tokens del tema (claro y oscuro) — nada de hex sueltos. */
+  .ant-preview { margin-top: 12px; }
+  .ant-cab { font-size: 13px; color: var(--color-text); margin-bottom: 8px; }
+  .ant-kpis { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+  .ant-kpi { min-width: 78px; padding: 7px 12px; border-radius: 10px; border: 1px solid var(--color-border); background: var(--color-surface); }
+  .ant-kpi b { display: block; font-size: 20px; line-height: 1.1; color: var(--color-text); }
+  .ant-kpi span { font-size: 10.5px; text-transform: uppercase; letter-spacing: .4px; color: var(--color-text-muted); }
+  .ant-kpi.ret { background: var(--color-success-bg); border-color: var(--color-success-border); }
+  .ant-kpi.eti { background: var(--color-info-bg); border-color: var(--color-info-border); }
+  .ant-kpi.mix { background: color-mix(in srgb, var(--color-warn) 16%, var(--color-bg)); border-color: color-mix(in srgb, var(--color-warn) 45%, var(--color-bg)); }
+  .ant-kpi.rev { background: var(--color-accent-bg); border-color: var(--color-accent-border); }
+  .ant-kpi.rev b { color: var(--color-danger); }
+  .ant-cuadre { font-size: 12.5px; padding: 7px 11px; border-radius: 9px; margin-bottom: 8px; border: 1px solid var(--color-border); }
+  .ant-cuadre.ok { background: var(--color-success-bg); border-color: var(--color-success-border); }
+  .ant-cuadre.warn { background: var(--color-accent-bg); border-color: var(--color-accent-border); }
+  .ant-avisos { margin: 0 0 10px 18px; padding: 0; font-size: 12px; color: var(--color-warn); line-height: 1.5; }
+  .ant-table td { vertical-align: top; white-space: normal; font-size: 12.5px; }
+  .ant-table td small { color: var(--color-text-muted); }
+  .ant-table .ant-que div + div { margin-top: 3px; }
+  .ant-aviso-fila { font-size: 11px; color: var(--color-warn); }
+  .ant-r-retener td { background: var(--color-success-bg); }
+  .ant-r-etiqueta td { background: var(--color-info-bg); }
+  .ant-r-mixto td { background: color-mix(in srgb, var(--color-warn) 14%, var(--color-bg)); }
+  .ant-r-revisar td { background: var(--color-accent-bg); }
+  .ant-chip { display: inline-block; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 7px; margin: 0 4px 3px 0; border: 1px solid var(--color-border); }
+  .ant-chip.si { background: var(--color-success); color: #fff; border-color: var(--color-success); }
+  .ant-chip.no { background: var(--color-surface-solid); color: var(--color-text); }
+  .ant-chip.dudoso { background: var(--color-accent-bg); color: var(--color-danger); border-color: var(--color-accent-border); }
   .reten-table tbody tr:last-child td { border-bottom: none; }
   .reten-table td.ped { font-weight: 800; color: var(--color-text); font-size: 13.5px; }
   .reten-table input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--color-accent); vertical-align: middle; }
@@ -427,10 +457,9 @@
       <div class="grid g2">
         <div class="cajon" id="cajonAntequera">
           <label class="pick" for="antFile"><i class="fa-solid fa-file-pdf"></i>
-            <span>Añadir Antequera<br><small style="color:var(--color-text-dim)">PDF · Detalle + Resumen de albaranes</small></span></label>
+            <span>Añadir Antequera<br><small style="color:var(--color-text-dim)">3 PDF · Resumen + Detalle + Bultos</small></span></label>
           <input type="file" id="antFile" accept="application/pdf,.pdf" multiple>
           <div class="fname" id="antFiles"></div>
-          <div id="antStats" style="display:none;font-size:11px;color:var(--color-text-dim);margin-bottom:8px"></div>
           <button class="btn green" id="antGen"><i class="fa-solid fa-play"></i><span>Procesar Antequera</span></button>
           <div id="antStatus" style="font-size:11px;color:var(--color-text-dim);margin-top:6px"></div>
         </div>
@@ -459,6 +488,9 @@
           <button class="btn green" onclick="subirXlsx(this)"><i class="fa-solid fa-play"></i><span>Procesar Recepción</span></button>
         </div>
       </div>
+
+      <!-- Vista previa de Antequera: palé por palé qué se retiene y qué lleva etiqueta (antes de volcar nada) -->
+      <div id="antPreview" class="ant-preview" style="display:none"></div>
     </div>
 
     <div class="sec">
@@ -756,10 +788,19 @@
     });
   }
 
-  // ---------- Antequera (PDF, parseado en el navegador con pdf.js) ----------
+  // ---------- Antequera v2 (3 PDF: Resumen + Detalle + Bultos, parseados en el navegador con pdf.js) ----------
+  // La base es el RESUMEN (todas las líneas de todos los palés: soporte, LM, unidades). El Detalle solo
+  // aporta el Pegase/Pyxis de los palés de proveedor y el PDF de Bultos el camión y el cuadre. El
+  // cotejo con TOM, la vista previa y las decisiones (retener / etiqueta HODOS) las hace el servidor
+  // (AntequeraPlan.gs); aquí solo se leen los PDF y se pinta el resultado.
   (function () {
     var WORKER = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-    var TIENDAS = { '279':'Mijas', '36':'Málaga', '14':'Marbella' };
+    var docs = { resumen: null, detalle: null, bultos: null };   // filas ya parseadas de cada PDF
+    var plan = null;          // último análisis del servidor (vista previa)
+    var seq = 0;              // descarta respuestas de análisis antiguas
+
+    // <<ANQ-PURO  (funciones sin DOM: se prueban en Node con los PDF reales)
+    var TIENDAS = { '279':'Mijas', '36':'Málaga', '14':'Marbella' };   // Antequera no sirve a Granada
     var COLS_RESUMEN = [
       {key:'fecha', hdr:'FECHA'}, {key:'exp', hdr:'FLETE'}, {key:'cliente', hdr:'CLIENTE'},
       {key:'albaran', hdr:'ALBARAN'}, {key:'flujo', hdr:'FLUJO'}, {key:'referencia', hdr:'REFERENCIA'},
@@ -772,26 +813,16 @@
       {key:'pedido', hdr:'PEDIDO'}, {key:'tipo', hdr:'TIPO'}, {key:'contenido', hdr:'CONTENIDO'},
       {key:'puestoen', hdr:'PUESTO'}, {key:'entrega', hdr:'ENTREGA'}, {key:'mensaje', hdr:'MENSAJE'}
     ];
-    var topRows = [];
-    var cache = null;
-
-    function $(id){ return document.getElementById(id); }
-    // También refleja en la barra global (antes solo se veía un texto gris
-    // de 11px bajo el botón — fácil de no ver, parecía que el botón se
-    // quedaba "pensando" sin motivo aunque el PDF ya se hubiera leído).
-    function setStatusAnt(t, cls){
-      $('antStatus').textContent = t;
-      setStatus((cls === 'err' ? '⚠️ ' : cls === 'ok' ? '✅ ' : '<i class="fa-solid fa-spinner spin"></i> ') + t, cls || 'run');
-    }
-    // Marcas diacríticas combinadas: SIEMPRE por código numérico
-    // (String.fromCharCode + RegExp constructor), nunca como carácter
-    // Unicode suelto dentro de un literal regex /[...]/: ese carácter se
-    // corrompe si el archivo se sirve con un charset distinto de UTF-8
-    // (visto en el servidor de pruebas local) y el rango sale invertido ->
-    // "Range out of order in character class" -> un error de sintaxis en un
-    // literal regex aborta el parseo del <script> ENTERO — ninguna función
-    // de la página queda definida. Por código numérico esto no puede pasar:
-    // son solo dígitos ASCII.
+    var COLS_BULTOS = [
+      {key:'agrupacion', hdr:'AGRUPACION'}, {key:'codigo', hdr:'CODIGO'}, {key:'tienda', hdr:'TIENDA'},
+      {key:'litigio', hdr:'LITIGIO'}, {key:'actividad', hdr:'ACTIVIDAD'}, {key:'tipo', hdr:'TIPO'},
+      {key:'contenido', hdr:'CONTENIDO'}, {key:'seccion', hdr:'SEC/PROV'}, {key:'flujo', hdr:'FLUJO'}
+    ];
+    // Marcas diacríticas combinadas: SIEMPRE por código numérico (String.fromCharCode + RegExp
+    // constructor), nunca como carácter Unicode suelto dentro de un literal regex /[...]/: ese
+    // carácter se corrompe si el archivo se sirve con un charset distinto de UTF-8 y el rango sale
+    // invertido -> "Range out of order in character class" -> un error de sintaxis en un literal
+    // regex aborta el parseo del <script> ENTERO. Por código numérico son solo dígitos ASCII.
     var DIACRITICOS_RE_ = new RegExp('[' + String.fromCharCode(0x300) + '-' + String.fromCharCode(0x36f) + ']', 'g');
     function norm(s){ return String(s==null?'':s).normalize('NFD').replace(DIACRITICOS_RE_,'').toUpperCase().trim(); }
 
@@ -805,17 +836,6 @@
       });
       lines.forEach(function(l){ l.sort(function(a,b){ return a.x-b.x; }); });
       return lines;
-    }
-    async function extractLines(arrayBuffer){
-      var pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
-      var all = [];
-      for (var p=1; p<=pdf.numPages; p++){
-        var page = await pdf.getPage(p);
-        var tc = await page.getTextContent();
-        var items = tc.items.map(function(it){ return { x: it.transform[4], y: it.transform[5], str: it.str }; });
-        all = all.concat(linesFromItems(items));
-      }
-      return all;
     }
     function buildAnchors(items, colspec){
       var anchors=[];
@@ -857,55 +877,117 @@
       }
       return rows;
     }
+    function textoPdf(allLines){
+      return norm(allLines.map(function(l){ return l.map(function(t){return t.str;}).join(' '); }).join(' '));
+    }
+    // 'bultos' se comprueba PRIMERO: su tabla también tiene la palabra CONTENIDO.
     function classify(allLines){
-      var all = norm(allLines.map(function(l){ return l.map(function(t){return t.str;}).join(' '); }).join(' '));
+      var all = textoPdf(allLines);
+      if (all.indexOf('RELACION DE BULTOS')>=0) return 'bultos';
       if (all.indexOf('RESUMEN ALBARANES')>=0 || (all.indexOf('EAN13')>=0 && all.indexOf('SOPORTE')>=0)) return 'resumen';
       if (all.indexOf('DETALLE DE LOS CONTENIDOS')>=0 || (all.indexOf('CONTENIDO')>=0 && all.indexOf('PUESTO')>=0)) return 'detalle';
       return null;
     }
-    function estadoDe(entrega){
-      var e = norm(entrega);
-      if (e.indexOf('YA ENTREGADO')>=0) return 'ya';
-      if (e.indexOf('NO ENTREGADO')>=0) return 'no';
-      return '';
-    }
     function tiendaDe(cliente){
       var d = String(cliente||'').replace(/\D/g,'');
-      return TIENDAS[d] || TIENDAS[String(parseInt(d,10))] || cliente;
+      return TIENDAS[d] || TIENDAS[String(parseInt(d,10))] || '';
     }
-    function cabeceraDetalle(detLines){
-      var txt = norm(detLines.slice(0,30).map(function(l){ return l.map(function(t){return t.str;}).join(' '); }).join(' '));
+    // Expedición + código de tienda desde la cabecera de un PDF (Detalle o Bultos)
+    function cabeceraPdf(lines){
+      var txt = norm(lines.slice(0,40).map(function(l){ return l.map(function(t){return t.str;}).join(' '); }).join(' '));
       var t = txt.match(/E(\d{3})/);
       var e = txt.match(/EXPEDICION[:\s]*0*(\d{3,7})/);
       return { tiendaCode: t ? ('E'+t[1]) : '', exp: e ? e[1] : '' };
     }
-    function construir(detalleRows, resumenRows, excluir, cabDet){
-      var exp='', tienda='';
-      if (resumenRows && resumenRows.length){ exp = String(resumenRows[0].exp||'').replace(/^0+/,''); tienda = tiendaDe(resumenRows[0].cliente); }
-      if (!exp && cabDet) exp = String(cabDet.exp||'').replace(/^0+/,'');
-      if (!tienda && cabDet && cabDet.tiendaCode) tienda = tiendaDe(cabDet.tiendaCode);
-      var rows=[], st={det:detalleRows.length, ls:0, cc:0, conPyx:0, sinPyx:0, excl:0};
-      detalleRows.forEach(function(d){
-        var est = estadoDe(d.entrega);
-        if (excluir && est==='ya'){ st.excl++; return; }
-        var pp = String(d.pedido||'').split('/');
-        var ped = (pp[0]||'').trim(), pyx = (pp[1]||'').trim();
-        // Sin "/" y de 6 dígitos exactos: es el Pyxis, no el Pedido (Pegase) —
-        // van a la columna equivocada y el cotejo con TOM nunca casa (pedido
-        // real, 2026-09-10). El Pegase siempre tiene más dígitos.
-        if (!pyx && /^\d{6}$/.test(ped)) { pyx = ped; ped = ''; }
-        var sop = (/^\d{4,}$/.test(d.contenido||'')) ? d.contenido : (d.puestoen||'');
-        var fl = norm(d.flujo);
-        if (fl==='LS') st.ls++; else if (fl==='CC') st.cc++;
-        if (pyx) st.conPyx++; else st.sinPyx++;
-        rows.push({ origen:'Antequera', exp:exp, tienda:tienda, pedido:ped, pyxis:pyx, flujo:fl, soporte:sop,
-          referencia:'', ean:'', unidades:'', estado: est==='ya'?'Ya entregado':(est==='no'?'No entregado':''), seccion: d.seccion||'' });
+    function parseResumen(lines){
+      return parseTable(lines, COLS_RESUMEN,
+        function(j){ return j.indexOf('REFERENCIA')>=0 && j.indexOf('SOPORTE')>=0; },
+        function(r){ return /^\d{5,}$/.test(r.soporte||''); });
+    }
+    function parseDetalle(lines){
+      return parseTable(lines, COLS_DETALLE,
+        function(j){ return j.indexOf('PEDIDO')>=0 && j.indexOf('CONTENIDO')>=0; },
+        function(r){ return String(r.pedido||'')!=='' && (/^\d{4,}$/.test(r.contenido||'') || /^\d{4,}$/.test(r.puestoen||'')); });
+    }
+    // Valor que acompaña a una etiqueta del PDF de Bultos ("Matrícula: R8895BCF"): en el mismo
+    // texto tras los dos puntos, o en el ítem siguiente de la misma línea.
+    function valorTras(lines, etiqueta){
+      for (var i=0;i<lines.length;i++){
+        var it = lines[i];
+        for (var j=0;j<it.length;j++){
+          if (norm(it[j].str).indexOf(etiqueta)===0){
+            var s = String(it[j].str), k = s.indexOf(':');
+            var resto = k>=0 ? s.substring(k+1).trim() : '';
+            if (resto) return resto;
+            if (it[j+1]) return String(it[j+1].str).trim();
+            return '';
+          }
+        }
+      }
+      return '';
+    }
+    function parseBultos(lines){
+      var cab = cabeceraPdf(lines);
+      var soportes = parseTable(lines, COLS_BULTOS,
+        function(j){ return j.indexOf('CONTENIDO')>=0 && j.indexOf('ACTIVIDAD')>=0; },
+        function(r){ return /^\d{5,}$/.test(r.contenido||''); }).map(function(r){
+          return { soporte: r.contenido, tipo: r.tipo, seccion: r.seccion, flujo: r.flujo, agrupacion: r.agrupacion, litigio: r.litigio };
+        });
+      var contadores = { palets: null, europeos: null, bultos: null };
+      lines.forEach(function(it){
+        for (var j=0;j<it.length;j++){
+          var n = norm(it[j].str), v = it[j+1] ? String(it[j+1].str).trim() : '';
+          if (/DE PALES EUROPEOS/.test(n)) contadores.europeos = parseInt(v,10);
+          else if (/DE PALES/.test(n)) contadores.palets = parseInt(v,10);
+          else if (/DE BULTOS/.test(n)) contadores.bultos = parseInt(v,10);
+        }
       });
-      return { rows:rows, st:st };
+      return {
+        exp: cab.exp, tiendaCode: cab.tiendaCode, soportes: soportes,
+        transportista: valorTras(lines,'TRANSPORTISTA'), matricula: valorTras(lines,'MATRICULA'),
+        remolque: valorTras(lines,'REMOLQUE'), precinto: valorTras(lines,'PRECINTO'), peso: valorTras(lines,'PESO TOTAL'),
+        palets: isNaN(contadores.palets) ? null : contadores.palets, europeos: isNaN(contadores.europeos) ? null : contadores.europeos,
+        bultos: isNaN(contadores.bultos) ? null : contadores.bultos
+      };
+    }
+    // Lo que se manda al servidor. exp y tienda salen del Resumen; si falta, del Detalle o de Bultos.
+    function entradaDe(d){
+      var exp = '', code = '';
+      if (d.resumen && d.resumen.rows.length){ exp = String(d.resumen.rows[0].exp||'').replace(/^0+/,''); code = d.resumen.rows[0].cliente || ''; }
+      if (!exp && d.detalle) exp = String(d.detalle.cab.exp||'').replace(/^0+/,'');
+      if (!code && d.detalle) code = d.detalle.cab.tiendaCode || '';
+      if (!exp && d.bultos) exp = String(d.bultos.exp||'').replace(/^0+/,'');
+      if (!code && d.bultos) code = d.bultos.tiendaCode || '';
+      return {
+        exp: exp, tiendaCodigo: code, tienda: tiendaDe(code),
+        resumen: d.resumen ? d.resumen.rows : [], detalle: d.detalle ? d.detalle.rows : [],
+        bultos: d.bultos ? d.bultos.datos : null
+      };
+    }
+    // ANQ-PURO>>
+
+    function $(id){ return document.getElementById(id); }
+    // También refleja en la barra global (antes solo se veía un texto gris
+    // de 11px bajo el botón — fácil de no ver, parecía que el botón se
+    // quedaba "pensando" sin motivo aunque el PDF ya se hubiera leído).
+    function setStatusAnt(t, cls){
+      $('antStatus').textContent = t;
+      setStatus((cls === 'err' ? '⚠️ ' : cls === 'ok' ? '✅ ' : '<i class="fa-solid fa-spinner spin"></i> ') + t, cls || 'run');
+    }
+    async function extractLines(arrayBuffer){
+      var pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
+      var all = [];
+      for (var p=1; p<=pdf.numPages; p++){
+        var page = await pdf.getPage(p);
+        var tc = await page.getTextContent();
+        var items = tc.items.map(function(it){ return { x: it.transform[4], y: it.transform[5], str: it.str }; });
+        all = all.concat(linesFromItems(items));
+      }
+      return all;
     }
 
     var fileInput = $('antFile');
-    fileInput.addEventListener('change', function(){ procesarPdf(fileInput.files); });
+    fileInput.addEventListener('change', function(){ procesarPdfs(fileInput.files); fileInput.value = ''; });
 
     // Solo se deshabilita MIENTRAS trabaja (leyendo el PDF o enviando), nunca
     // en reposo por no tener PDF aún — igual que los otros 3 botones (Meco,
@@ -913,56 +995,133 @@
     // en vez de quedarse apagados sin explicación (parecía roto/en bucle).
     function lockAnt(on){ $('antGen').disabled = on; }
 
-    async function procesarPdf(fileList){
+    function pintarArchivos(){
+      var t = [];
+      if (docs.resumen) t.push('Resumen ✓'); else t.push('Resumen ✗');
+      if (docs.detalle) t.push('Detalle ✓'); else t.push('Detalle ✗');
+      if (docs.bultos) t.push('Bultos ✓'); else t.push('Bultos ✗');
+      $('antFiles').textContent = t.join(' · ');
+      $('antFiles').parentNode.querySelector('label.pick').classList.toggle('has-file', !!docs.resumen);
+    }
+
+    async function procesarPdfs(fileList){
       var files = Array.prototype.slice.call(fileList).filter(function(f){ return /\.pdf$/i.test(f.name) || f.type==='application/pdf'; });
-      if (!files.length){ setStatusAnt('No hay PDF. Sube al menos el "Detalle de contenidos".', 'err'); return; }
+      if (!files.length){ setStatusAnt('No hay PDF. Sube los 3: Resumen de albaranes, Detalle de contenidos y Relación de bultos.', 'err'); return; }
       if (!window.pdfjsLib){ setStatusAnt('No se pudo cargar pdf.js (¿sin conexión?).', 'err'); return; }
       pdfjsLib.GlobalWorkerOptions.workerSrc = WORKER;
       setStatusAnt('Leyendo PDF…');
-      topRows = []; lockAnt(true);
-      $('antFiles').textContent = files.map(function(f){ return f.name; }).join(', ');
+      lockAnt(true);
       try {
-        var clasif = { resumen:null, detalle:null };
+        var nuevos = { resumen:null, detalle:null, bultos:null }, desconocidos = [];
         for (var i=0;i<files.length;i++){
           var buf = await files[i].arrayBuffer();
           var lines = await extractLines(buf.slice(0));
           var tipo = classify(lines);
-          if (tipo==='resumen') clasif.resumen = lines;
-          else if (tipo==='detalle') clasif.detalle = lines;
+          if (tipo==='resumen') nuevos.resumen = { rows: parseResumen(lines) };
+          else if (tipo==='detalle') nuevos.detalle = { rows: parseDetalle(lines), cab: cabeceraPdf(lines) };
+          else if (tipo==='bultos') { var b = parseBultos(lines); nuevos.bultos = { datos: b, exp: b.exp, tiendaCode: b.tiendaCode }; }
+          else desconocidos.push(files[i].name);
         }
-        if (!clasif.detalle){ setStatusAnt('Falta el "Detalle de contenidos" (el que trae el PEDIDO de cada soporte).', 'err'); return; }
-        var detalleRows = parseTable(clasif.detalle, COLS_DETALLE,
-          function(j){ return j.indexOf('PEDIDO')>=0 && j.indexOf('CONTENIDO')>=0; },
-          function(r){ return String(r.pedido||'')!=='' && (/^\d{4,}$/.test(r.contenido||'') || /^\d{4,}$/.test(r.puestoen||'')); });
-        var resumenRows = clasif.resumen ? parseTable(clasif.resumen, COLS_RESUMEN,
-          function(j){ return j.indexOf('REFERENCIA')>=0 && j.indexOf('SOPORTE')>=0; },
-          function(r){ return /^\d{5,}$/.test(r.soporte||''); }) : [];
-        cache = { detalleRows: detalleRows, resumenRows: resumenRows, cabDet: cabeceraDetalle(clasif.detalle), faltaResumen: !clasif.resumen };
-        var out = construir(cache.detalleRows, cache.resumenRows, true, cache.cabDet);
-        topRows = out.rows;
-        lockAnt(false);
-        if (!topRows.length){ setStatusAnt('No salió ninguna línea del Detalle. Revisa el PDF.', 'err'); return; }
-        var aviso = cache.faltaResumen ? ' (sin Resumen: tienda/exp salen de la cabecera del Detalle)' : '';
-        setStatusAnt(topRows.length + ' líneas listas' + aviso + '. Pulsa "Procesar Antequera".', 'ok');
-        $('antStats').style.display = 'block';
-        $('antStats').textContent = out.st.det + ' líneas · ' + out.st.conPyx + ' con Pyxis · ' + out.st.sinPyx + ' sin Pyxis (van por TOM) · ' + out.st.ls + ' LS · ' + out.st.cc + ' CC';
-      } catch (err) {
+        // ¿Mismo envío que lo ya cargado? Si no (otra expedición), se empieza de cero.
+        var expNuevo = '';
+        ['resumen','detalle','bultos'].forEach(function(k){
+          if (expNuevo || !nuevos[k]) return;
+          expNuevo = k==='resumen' ? (nuevos.resumen.rows.length ? String(nuevos.resumen.rows[0].exp||'').replace(/^0+/,'') : '')
+                   : String((nuevos[k].cab || nuevos[k]).exp || '').replace(/^0+/,'');
+        });
+        var expAct = entradaDe(docs).exp;
+        if (expAct && expNuevo && expAct !== expNuevo) docs = { resumen:null, detalle:null, bultos:null };
+        ['resumen','detalle','bultos'].forEach(function(k){ if (nuevos[k]) docs[k] = nuevos[k]; });
+        pintarArchivos();
+        if (desconocidos.length) setStatusAnt('PDF no reconocido: ' + desconocidos.join(', '), 'err');
+        if (!docs.resumen || !docs.resumen.rows.length){
+          plan = null; $('antPreview').style.display='none'; lockAnt(false);
+          setStatusAnt('Falta el "Resumen de albaranes" (es la base: trae el soporte, LM y unidades de cada palé).', 'err');
+          return;
+        }
+        analizar();
+      } catch (err){
         lockAnt(false);
         setStatusAnt('Error leyendo el PDF: ' + (err && err.message ? err.message : err), 'err');
       }
     }
 
-    $('antGen').addEventListener('click', function () {
-      if (!topRows.length) { setStatus('⚠️ Sube el PDF de Antequera primero (o espera a que termine de leerlo).', 'err'); return; }
-      var mapaResumen = {};
-      var rr = (cache && cache.resumenRows) || [];
-      rr.forEach(function(r){
-        var ref = String(r.referencia||'').trim(), sop = String(r.soporte||'').trim();
-        if (ref && sop && !mapaResumen[ref]) mapaResumen[ref] = sop;
-      });
+    function analizar(){
+      var mi = ++seq;
+      plan = null;
+      setStatusAnt('Cotejando con TOM (pedidos y transporte)… puede tardar unos segundos.');
       lockAnt(true);
-      setStatus('<i class="fa-solid fa-spinner spin"></i> Volcando ' + topRows.length + ' líneas de Antequera en TOP…', 'run');
+      google.script.run
+        .withSuccessHandler(function(r){
+          if (mi !== seq) return;
+          lockAnt(false);
+          if (!r || r.error){ plan = null; $('antPreview').style.display='none'; setStatusAnt((r && r.error) || 'No se pudo analizar la expedición.', 'err'); return; }
+          plan = r;
+          pintarPlan(r);
+          var rev = r.resumen.revisar;
+          setStatusAnt(r.palets.length + ' palés analizados: ' + r.resumen.retener + ' con retención, ' + r.resumen.etiqueta + ' con etiqueta' +
+            (r.resumen.mixtos ? ', ' + r.resumen.mixtos + ' mixtos' : '') + (rev ? ' · ' + rev + ' por REVISAR' : '') + '. Revisa la vista previa y pulsa "Procesar Antequera".', rev ? 'err' : 'ok');
+        })
+        .withFailureHandler(function(e){ if (mi !== seq) return; lockAnt(false); plan = null; setStatusAnt(e.message, 'err'); })
+        .analizarAntequera(entradaDe(docs));
+    }
+
+    function fmtPeso(p){
+      var n = parseFloat(String(p||'').replace(/\./g,'').replace(',','.'));
+      return isNaN(n) ? '' : n.toLocaleString('es-ES', { maximumFractionDigits: 1 }) + ' kg';
+    }
+    function chipPedido(p){
+      var cls = p.transporte==='SI' ? 'si' : (p.transporte==='NO' ? 'no' : 'dudoso');
+      var tit = p.transporte==='SI' ? 'Tiene transporte: se retiene' : (p.transporte==='NO' ? 'Sin transporte: lleva etiqueta' : 'No está en TOM: no se puede confirmar el transporte');
+      return '<span class="ant-chip ' + cls + '" title="' + tit + '">' + escH(p.pyxis) + '</span>';
+    }
+    function pintarPlan(r){
+      var h = '';
+      var cam = r.camion ? ' · camión <b>' + escH(r.camion.transportista) + '</b> ' + escH(r.camion.matricula) +
+        (r.camion.precinto ? ' · precinto ' + escH(r.camion.precinto) : '') + (fmtPeso(r.camion.peso) ? ' · ' + fmtPeso(r.camion.peso) : '') : '';
+      h += '<div class="ant-cab">Expedición <b>' + escH(r.exp) + '</b> · <b>' + escH(r.tienda) + '</b>' + cam + '</div>';
+      h += '<div class="ant-kpis">' +
+        '<div class="ant-kpi"><b>' + r.palets.length + '</b><span>palés</span></div>' +
+        '<div class="ant-kpi ret"><b>' + r.resumen.retener + '</b><span>retener</span></div>' +
+        '<div class="ant-kpi eti"><b>' + r.resumen.etiqueta + '</b><span>etiqueta</span></div>' +
+        (r.resumen.mixtos ? '<div class="ant-kpi mix"><b>' + r.resumen.mixtos + '</b><span>mixtos</span></div>' : '') +
+        '<div class="ant-kpi ' + (r.resumen.revisar ? 'rev' : '') + '"><b>' + r.resumen.revisar + '</b><span>revisar</span></div></div>';
+      var c = r.cuadre, cuadreOk = c.hayBultos && !c.faltanEnResumen.length && !c.sobranEnResumen.length &&
+        (c.palesDeclarados == null || c.palesDeclarados === c.palesContados) && (c.bultosDeclarados == null || c.bultosDeclarados === c.bultosContados);
+      if (c.hayBultos){
+        h += '<div class="ant-cuadre ' + (cuadreOk ? 'ok' : 'warn') + '">' + (cuadreOk ? '✓ Cuadre: ' : '⚠️ No cuadra: ') +
+          'Bultos ' + (c.palesDeclarados == null ? c.palesContados : c.palesDeclarados) + ' palés + ' + (c.bultosDeclarados == null ? c.bultosContados : c.bultosDeclarados) +
+          ' bulto(s) · ' + c.soportesBultos + ' soportes en Bultos · ' + c.soportesResumen + ' en el Resumen · ' + c.detalleVivas + ' en el Detalle</div>';
+      }
+      if (r.avisos.length){
+        h += '<ul class="ant-avisos">' + r.avisos.map(function(a){ return '<li>' + escH(a) + '</li>'; }).join('') + '</ul>';
+      }
+      h += '<div class="reten-table-wrap"><table class="reten-table ant-table"><thead><tr><th>Soporte</th><th>Palé</th><th>Lleva</th><th>Pedidos</th><th>Qué pasa</th></tr></thead><tbody>';
+      r.palets.forEach(function(p){
+        // Un palé con líneas sin pedido va SIEMPRE en rojo (aunque lo resuelto ya tenga decisión).
+        var cls = p.revisar ? 'revisar' : (p.accion==='RETENER' ? 'retener' : (p.accion==='MIXTO' ? 'mixto' : (p.accion==='ETIQUETA' ? 'etiqueta' : 'revisar')));
+        var lleva = p.lineas.slice(0,3).map(function(l){ return escH(l.lm) + ' ×' + l.uds; }).join('<br>') + (p.lineas.length > 3 ? '<br>+' + (p.lineas.length-3) + ' más' : '');
+        var pal = escH(p.flujoDoc) + (p.tipo ? ' · ' + (p.tipo==='C' ? 'bulto' : 'palé') : '') + (p.seccion ? ' · sec ' + escH(p.seccion) : '') + (p.proveedor ? '<br><small>' + escH(p.proveedor) + '</small>' : '');
+        var pedidos = p.pedidos.map(chipPedido).join(' ') || '<span class="ant-chip dudoso">sin pedido</span>';
+        var que = '';
+        if (p.retener.length) que += '<div><b>Retener</b> ' + escH(p.retener.join(' + ')) + '</div>';
+        if (p.etiqueta.length) que += '<div><b>Etiqueta' + (p.etiqueta.length > 1 ? ' (agrupación)' : '') + '</b> ' + escH(p.textoEtiqueta) + '</div>';
+        if (!que) que = '<div><b>REVISAR</b></div>';
+        if (p.avisos.length) que += '<div class="ant-aviso-fila">' + p.avisos.map(escH).join('<br>') + '</div>';
+        h += '<tr class="ant-r-' + cls + '"><td><b>' + escH(p.soporte) + '</b></td><td>' + pal + '</td><td>' + lleva + '</td><td>' + pedidos + '</td><td class="ant-que">' + que + '</td></tr>';
+      });
+      h += '</tbody></table></div>';
+      var box = $('antPreview');
+      box.innerHTML = h;
+      box.style.display = 'block';
+    }
+
+    $('antGen').addEventListener('click', function () {
+      if (!plan || !plan.top || !plan.top.length) { setStatus('⚠️ Sube los PDF de Antequera primero (o espera a que termine el análisis).', 'err'); return; }
+      lockAnt(true);
+      setStatus('<i class="fa-solid fa-spinner spin"></i> Volcando ' + plan.top.length + ' líneas de Antequera en TOP…', 'run');
       var w = window.open('', '_blank');
+      var sinPedido = plan.top.filter(function(t){ return !t.pyxis; }).length;
       google.script.run
         .withSuccessHandler(function(){
           setStatus('<i class="fa-solid fa-spinner spin"></i> Procesando arrastres…', 'run');
@@ -970,7 +1129,7 @@
             .withSuccessHandler(function(r){
               lockAnt(false);
               if (!r || r.error) { if (w) w.close(); setStatus('⚠️ ' + ((r && r.error) || 'Error al procesar.'), 'err'); return; }
-              setStatus('✅ ' + r.mensaje, 'ok');
+              setStatus((sinPedido ? '⚠️ ' + sinPedido + ' línea(s) sin pedido: revisa los palés en rojo de la vista previa. ' : '✅ ') + r.mensaje, sinPedido ? 'err' : 'ok');
               $('antStatus').textContent = 'Añadido y procesado.'; // solo el texto local; la barra global ya lleva el resumen real de arriba
               if (r.htmlImpresion && w) { w.document.open(); w.document.write(r.htmlImpresion); w.document.close(); }
               else if (w) { w.close(); }
@@ -979,7 +1138,7 @@
             .procesarArrastresWeb();
         })
         .withFailureHandler(function(e){ lockAnt(false); if (w) w.close(); setStatus('⚠️ ' + e.message, 'err'); })
-        .volcarAntequeraTOP(topRows, mapaResumen);
+        .volcarAntequeraLineasTOP(plan.top);
     });
   })();
 

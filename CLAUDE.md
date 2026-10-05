@@ -61,6 +61,7 @@ Fondo `#080a10`, rojo acento `#e30613`, fuentes Bebas Neue + DM Sans, Font Aweso
 | `Hodos.gs` | Hoja **HODOS**: pedidos de cerámica SIN transporte, CC2 y LS que pierden trazabilidad + volcado de TRAMECO. Catálogo cerámico cacheado 6 h. |
 | `Proceso_Recepcion.gs` | Procesa recepción: expande líneas con transporte "no" según TOM, marca VERDE, **registra retenidos** (1 por pedido). |
 | `Proceso_Meco.gs` | Formato sobre la hoja TOP para Meco (no borra TOP). |
+| `AntequeraPlan.gs` | Antequera v2: análisis de la expedición (3 PDF + TOM) palé por palé; ver sección "Antequera v2". `Antequera.gs` trae `volcarAntequeraLineasTOP` (+ la versión antigua). |
 | `Retenidos.gs` | `registrarRetenidos_()` (alta sin duplicados por bloque/tienda), alta manual, cabeceras, localización de bloque por título. |
 | `Envio.gs` | Envío de correos de retenidos por tienda. `enviarCorreo_(to,asunto,html,texto,ccExtra)`. |
 | `Portada.gs` | Importa retenidos desde una hoja externa de "portada" (otro documento). |
@@ -216,6 +217,33 @@ releen la hoja sin más (try/catch alrededor de lectura y escritura de caché).
   los del día. TOM está pensado para vaciarse con **"🧹 Borrar todo"** (borra TOP+TOM+TRAMECO, conserva
   RETENIDOS/EAN/FAMILIAS) — recordar a Pedro usarlo con regularidad, si no vuelve a acumular y ralentiza
   `ultimaFilaCol_`/la lectura de TOM en cada pasada.
+
+## Antequera v2 (2026-10-05) — `AntequeraPlan.gs` + cajón de `Web.html`
+
+Cada expedición Antequera→tienda llega en **3 PDF**: Resumen de albaranes (base), Detalle de contenidos
+entregados y Relación de bultos 1ª recepción. Se leen en el navegador (pdf.js) y el servidor
+(`analizarAntequera`) devuelve la **vista previa palé por palé** sin escribir nada; "Procesar Antequera"
+vuelca a TOP (`volcarAntequeraLineasTOP`) y llama a `procesarArrastresWeb`.
+
+- **Identidad del palé = SOPORTE del Resumen/Bultos** (el de la etiqueta "SOPORTE PICKING"; el SSCC de
+  18 dígitos lo lleva dentro: `493000002` + soporte + dígito de control GS1). El "Contenido" del Detalle
+  en palés de proveedor es otro número que no está en ninguna etiqueta. En RETENIDOS el "SSCC" es el soporte.
+- **Base = Resumen** (todas las líneas). El Detalle solo enseña UN pedido por palé (el de la última línea).
+- **Dos flujos en el Resumen**: STOCK (preparado en Antequera: REFERENCIA = código logístico "C…", LM en
+  REFLM, pedido+cliente en MENSAJE) y TRÁNSITO (proveedor: LM en REFERENCIA, sin pedido -> se busca en TOM
+  por LM + unidades + tienda; el Pegase/Pyxis del Detalle desempata). Todos los CC tienen pedido de cliente.
+- **Reglas (Pedro)**: se retiene el PEDIDO con transporte (TOM, por Pyxis — `Proceso_Arrastres` paso 2 tiene
+  rama propia para origen "Antequera"); todo lo demás lleva etiqueta HODOS, **una por palé, solo pedidos**
+  (varios = agrupación "ped+ped"; `_generarHodos_` regla 7). Palé mixto: se retiran los de transporte y la
+  etiqueta lleva los demás. Lo que no case = REVISAR (nunca se descarta en silencio).
+- **TOP**: una fila por línea del Resumen; J (Pedido) = Pegase o, si no se conoce, Pyxis (J no puede ir
+  vacía: `ultimaFilaCol_` la usa para saber dónde acaba TOP); S = LM tal cual del PDF (los "48…" con sufijo
+  los recorta el paso 0, NO recortar antes); Q = soporte.
+- Antequera NO sirve a Granada. El diálogo antiguo del menú (`AntequeraForm.html` + `volcarAntequeraTOP`)
+  sigue vivo pero pierde los palés sin Pegase y ahora avisa: usar el Panel Arrastres.
+- Pruebas (fuera del repo, `Proyectos\_scratch\`): `test_antequera_v2.js` (análisis), `test_antequera_e2e.js`
+  (TOP → retenidos → HODOS con TOM real), `test_antequera_cliente.js` (PDF reales + pdf.js),
+  `test_regresion_otros_origenes.js` (Valencia/Torija/Meco idénticos a HEAD).
 
 ## Sugerencias / mejoras / fallos (`Sugerencias.gs` + `SugerenciasForm.html`)
 
