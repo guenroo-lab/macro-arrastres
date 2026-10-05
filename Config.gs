@@ -53,10 +53,10 @@ const CFG = {
   // 'Día' = fecha de salida a tienda, se calcula sola según el origen.
   RETEN_COLS: ['Tipo', 'Flete', 'Pedido', 'Pyxis', 'Agrupación', 'SSCC', 'Expedición', 'Enviado', 'Día'],
   // Granada vuelve a retenerse (pedido 2026-09-09, direcciones de correo
-  // añadidas el mismo día en TIENDAS_ENVIO): de momento SOLO el registro de
-  // retenidos y su envío (añadir/ver/quitar/mover fecha/enviar). NO está en
-  // TIENDA_ARRASTRE ni TIENDA_RECEPCION — no hay código de tienda conocido
-  // todavía para detectarla sola desde arrastres/recepción.
+  // añadidas el mismo día en TIENDAS_ENVIO). Desde 2026-09-24 SÍ se detecta
+  // sola en Recepción (código de tienda '043', confirmado por Pedro) — ver
+  // TIENDA_RECEPCION. Sigue sin código conocido en Arrastres (columna G,
+  // TIENDA_ARRASTRE) — pendiente de confirmar el literal exacto.
   RETEN_BLOQUES: [
     { nombre: 'Málaga',   color: '#c6e0b4', col: 1 },
     { nombre: 'Marbella', color: '#bdd7ee', col: 11 },
@@ -79,9 +79,10 @@ const CFG = {
   },
 
   // Mapas de tienda -> nombre canónico del bloque de retenidos
-  // (Granada ya no se retiene)
+  // Granada: código '043' confirmado por Pedro 2026-09-24, solo en Recepción
+  // (en Arrastres aún no se conoce el literal de columna G para Granada).
   TIENDA_ARRASTRE: { 'MALAGA': 'Málaga', 'MARBELLA': 'Marbella', 'MIJAS': 'Mijas' },
-  TIENDA_RECEPCION: { '036': 'Málaga', '014': 'Marbella', '279': 'Mijas' },
+  TIENDA_RECEPCION: { '036': 'Málaga', '014': 'Marbella', '279': 'Mijas', '043': 'Granada' },
 
   // Origen de los arrastres (columna A). Este nombre es el que aparece en la
   // columna "Tipo" de RETENIDOS. Añade aquí el código de Antequera cuando lo

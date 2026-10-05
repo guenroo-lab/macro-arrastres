@@ -138,7 +138,7 @@ function _procesarRecepcionNucleoCalculo_() {
   // Alta de retenidos por tienda (acumula en RETENIDOS, sin duplicados)
   const registros = [];
   const dedupRun = {};
-  const vistos = { 'Málaga': 0, 'Marbella': 0, 'Mijas': 0 };
+  const vistos = { 'Málaga': 0, 'Marbella': 0, 'Mijas': 0, 'Granada': 0 };
   const codigosSinMapa = {};
   for (let i = 1; i < ultFila; i++) {
     if (final[i][38] !== 'VERDE') continue;
@@ -158,7 +158,7 @@ function _procesarRecepcionNucleoCalculo_() {
   }
   const res = registrarRetenidos_(registros);
   const d = res.detalle;
-  const det = ['Málaga', 'Marbella', 'Mijas']
+  const det = ['Málaga', 'Marbella', 'Mijas', 'Granada']
     .map(t => t + ': ' + vistos[t] + ' VERDE → ' + d[t].nuevos + ' nuevos' + (d[t].repetidos ? ' (+' + d[t].repetidos + ' ya estaban)' : ''))
     .join('  |  ');
   const sinMapa = Object.keys(codigosSinMapa).map(c => c + '×' + codigosSinMapa[c]).join(', ');
