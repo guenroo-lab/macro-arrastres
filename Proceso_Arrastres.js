@@ -183,7 +183,8 @@ function _procesarArrastresNucleoCalculo_() {
   Object.keys(cab).forEach(c => { top[0][c - 1] = cab[c]; });
   // Antequera: V = Trae (enviadas), W = Pide (lo que pide el pedido, TOM) y X = Dif (+ sobrante / - faltante).
   const hayAntequera = top.some((f, i) => i > 0 && i < uTOP && t_(f[cA]) === 'Antequera');
-  if (hayAntequera) { top[0][21] = 'Trae'; top[0][22] = 'Pide'; top[0][23] = 'Dif'; }
+  // El proveedor de Antequera va en I (no en H): la cabecera "Proveedor" de H se quita para no duplicarla.
+  if (hayAntequera) { top[0][21] = 'Trae'; top[0][22] = 'Pide'; top[0][23] = 'Dif'; top[0][7] = ''; top[0][8] = 'Proveedor'; }
 
   // --- 7. Marcar LS-SIE (morado) — Módulo 4, con tope de complejidad por soporte.
   // Regla añadida (decisión de Pedro, 2026-08-06): un soporte con MÁS DE 2
@@ -259,9 +260,9 @@ function _procesarArrastresNucleoCalculo_() {
   const estadoFinal = [''];
   orden.forEach(i => { top[i][cZ] = estado[i]; filasFinal.push(top[i]); estadoFinal.push(estado[i]); });
 
-  // --- 9. Backgrounds por bloque (A:W = 23 col), blanco por defecto ---
+  // --- 9. Backgrounds por bloque (A:W = 23 col; Antequera A:X = 24 por la columna Dif), blanco por defecto ---
   // Las VERDE alternan verde claro/oscuro cada vez que cambia el Pyxis (col K).
-  const ANCHO = 23;
+  const ANCHO = hayAntequera ? 24 : 23;
   const fondos = [];
   let pedAnt = null, alt = false;
   for (let f = 1; f < filasFinal.length; f++) {
@@ -301,6 +302,15 @@ function _procesarArrastresNucleoCalculo_() {
   // tránsito, el de la columna ENTREGA del Detalle) y se imprime con la hoja TOP.
   // Antequera: G (Nombre) se oculta porque F (Tienda) ya trae "014 Marbella" (G sigue ahí: la lógica lo usa).
   if (!hayAntequera) wsTOP.hideColumns(9); else wsTOP.hideColumns(7);   // I (Proveedor) / G (Nombre)
+  // Antequera: además se ocultan las columnas que quedan VACÍAS en todas las líneas (H, Agrupación, SSCC
+  // Agrupación, Tipo Soporte…) para que Trae · Pide · Dif quepan en la hoja y en la impresión.
+  if (hayAntequera) {
+    for (let c = 0; c < ANCHO; c++) {
+      let vacia = true;
+      for (let r = 1; r < filasFinal.length; r++) { if (t_(filasFinal[r][c]) !== '') { vacia = false; break; } }
+      if (vacia) wsTOP.hideColumns(c + 1);
+    }
+  }
   wsTOP.hideColumns(15);    // O
   wsTOP.hideColumns(26);    // Z
   _marca('escritura TOP (valores + colores + bordes + formatos)');

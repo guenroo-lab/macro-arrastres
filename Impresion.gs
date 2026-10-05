@@ -43,6 +43,14 @@ function htmlImprimirTOP() {
 
   const ocultas = [];
   for (let c = 1; c <= lastCol; c++) ocultas[c] = ws.isColumnHiddenByUser(c);
+  // Antequera: tampoco se imprime ninguna columna que esté vacía en todas las líneas (más sitio para Trae · Pide · Dif).
+  if (LIMITE === 24) {
+    for (let c = 0; c < lastCol; c++) {
+      let vacia = true;
+      for (let r = 1; r < vals.length; r++) { if (t_(vals[r][c]) !== '') { vacia = false; break; } }
+      if (vacia) ocultas[c + 1] = true;
+    }
+  }
 
   // Cabecera del documento. Se reutiliza la detección de la carátula, que sabe
   // distinguir la disposición de Meco (origen en el bloque info, transporte en

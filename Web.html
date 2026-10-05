@@ -353,6 +353,11 @@
   .ant-table td { vertical-align: top; white-space: normal; font-size: 12.5px; }
   .ant-table td small { color: var(--color-text-muted); }
   .ant-table .ant-que div + div { margin-top: 3px; }
+  .ant-table .ant-mini { border-collapse: collapse; width: auto; margin: 0; }
+  .ant-table .ant-mini th { background: transparent; border: 0; border-bottom: 1px solid var(--color-border); padding: 0 12px 2px 0; font-size: 10.5px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; color: var(--color-text-muted); text-align: left; position: static; }
+  .ant-table .ant-mini td { background: transparent; border: 0; padding: 3px 12px 3px 0; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .ant-table .ant-mini td:nth-child(n+2), .ant-table .ant-mini th:nth-child(n+2) { text-align: right; }
+  .ant-table .ant-mini td:last-child, .ant-table .ant-mini th:last-child { padding-right: 0; }
   .ant-aviso-fila { font-size: 11px; color: var(--color-warn); }
   .ant-r-retener td { background: var(--color-success-bg); }
   .ant-r-etiqueta td { background: var(--color-info-bg); }
@@ -1262,20 +1267,26 @@
       if (r.avisos.length){
         h += '<ul class="ant-avisos">' + r.avisos.map(function(a){ return '<li>' + escH(a) + '</li>'; }).join('') + '</ul>';
       }
-      h += '<div class="reten-table-wrap"><table class="reten-table ant-table"><thead><tr><th>Soporte</th><th>Palé</th><th>Lleva</th><th>Pedidos</th><th>Qué pasa</th></tr></thead><tbody>';
+      h += '<div class="reten-table-wrap"><table class="reten-table ant-table"><thead><tr><th>Palé</th><th>Lleva</th><th>Pedidos</th><th>Qué pasa</th></tr></thead><tbody>';
       r.palets.forEach(function(p){
         // Un palé con líneas sin pedido va SIEMPRE en rojo (aunque lo resuelto ya tenga decisión).
         var cls = p.revisar ? 'revisar' : (p.accion==='RETENER' ? 'retener' : (p.accion==='MIXTO' ? 'mixto' : (p.accion==='ETIQUETA' ? 'etiqueta' : 'revisar')));
-        var lleva = p.lineas.slice(0,3).map(function(l){ return escH(l.lm) + ' ×' + l.uds + (l.pide != null ? ' <small>pide ' + l.pide + '</small>' : '') + (l.sobra ? '<span class="ant-sob">+' + l.sobra + ' sobra</span>' : '') + (l.falta ? '<span class="ant-fal">−' + l.falta + ' falta</span>' : '') + (l.ean ? ' <small>' + escH(l.ean) + '</small>' : ''); }).join('<br>') + (p.lineas.length > 3 ? '<br>+' + (p.lineas.length-3) + ' más' : '');
+        // Mini-tabla por palé: LM (con su EAN) · Trae (lo que lleva el palé) · Pide (lo que pide el pedido) · Dif (+ sobra / − falta)
+        var lleva = '<table class="ant-mini"><thead><tr><th>LM</th><th>Trae</th><th>Pide</th><th>Dif</th></tr></thead><tbody>' +
+          p.lineas.slice(0,8).map(function(l){
+            var dif = l.sobra ? '<span class="ant-sob">+' + l.sobra + '</span>' : (l.falta ? '<span class="ant-fal">−' + l.falta + '</span>' : '');
+            return '<tr><td><b>' + escH(l.lm) + '</b>' + (l.ean ? '<br><small>' + escH(l.ean) + '</small>' : '') + '</td><td><b>' + escH(String(l.uds)) + '</b></td><td>' +
+              (l.pide != null && l.pide !== '' ? '<b>' + escH(String(l.pide)) + '</b>' : '<small>—</small>') + '</td><td>' + dif + '</td></tr>';
+          }).join('') + '</tbody></table>' + (p.lineas.length > 8 ? '<small>+' + (p.lineas.length-8) + ' líneas más</small>' : '');
         var prov = p.proveedor ? p.proveedor.split(' / ').map(function(x){ return x==='493' ? '493 · stock propio' : x; }).join(' / ') : '';
-        var pal = escH(p.flujoDoc) + (p.tipo ? ' · ' + (p.tipo==='C' ? 'bulto' : 'palé') : '') + (p.seccion ? ' · sec ' + escH(p.seccion) : '') + (prov ? '<br><small>' + escH(prov) + '</small>' : '');
+        var pal = '<small>' + escH(p.flujoDoc) + (p.tipo ? ' · ' + (p.tipo==='C' ? 'bulto' : 'palé') : '') + (p.seccion ? ' · sec ' + escH(p.seccion) : '') + (prov ? '<br>' + escH(prov) : '') + '</small>';
         var pedidos = p.pedidos.map(chipPedido).join(' ') || '<span class="ant-chip dudoso">sin pedido</span>';
         var que = '';
         if (p.retener.length) que += '<div><b>Retener</b> ' + escH(p.retener.join(' + ')) + '</div>';
         if (p.etiqueta.length) que += '<div><b>Etiqueta' + (p.etiqueta.length > 1 ? ' (agrupación)' : '') + '</b> ' + escH(p.textoEtiqueta) + '</div>';
         if (!que) que = '<div><b>REVISAR</b></div>';
         if (p.avisos.length) que += '<div class="ant-aviso-fila">' + p.avisos.map(escH).join('<br>') + '</div>';
-        h += '<tr class="ant-r-' + cls + '"><td><b>' + escH(p.soporte) + '</b></td><td>' + pal + '</td><td>' + lleva + '</td><td>' + pedidos + '</td><td class="ant-que">' + que + '</td></tr>';
+        h += '<tr class="ant-r-' + cls + '"><td><b>' + escH(p.soporte) + '</b><br>' + pal + '</td><td>' + lleva + '</td><td>' + pedidos + '</td><td class="ant-que">' + que + '</td></tr>';
       });
       h += '</tbody></table></div>';
       var box = $('antPreview');
