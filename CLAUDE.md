@@ -247,6 +247,20 @@ vuelca a TOP (`volcarAntequeraLineasTOP`) y llama a `procesarArrastresWeb`.
   (limpio: "ECOCERAMIC (" -> "ECOCERAMIC"), por el Pegase de la línea. La columna I se oculta salvo si hay
   Antequera. El Control de pedido (`htmlImprimirPyxisArrastres`) de Antequera añade PALÉ y PROVEEDOR y SUMA las
   unidades de un mismo LM; el resto de orígenes sale idéntico (prueba de regresión).
+- **Trae / Pide / Sobrante (2026-10-05, Pedro)**: V=**Trae** (unidades enviadas, Resumen), W=**Pide** (lo que pide el
+  pedido: suma de TOM por pedido+LM) y X=**Dif** (+ sobrante / − faltante, solo en la última línea del grupo
+  pedido+LM). Si trae MÁS de lo que pide, el exceso no corresponde a ningún pedido: etiqueta HODOS propia
+  `SOBRANTE+3 UDS+LM 95237762+PED 986016` (`_generarHodos_` regla 7; se crea aunque el pedido se retenga). Si trae
+  menos solo se avisa (puede ser entrega parcial). La vista previa tiene una casilla «Crear etiqueta de sobrante»
+  (desmarcada = no se crean). Ojo: si TOM y Resumen usan unidades distintas (p. ej. packs de 100 UD) saldrá un
+  sobrante falso — se ve en la vista previa antes de procesar. Cabeceras V/W/X = Trae/Pide/Dif y la hoja TOP
+  impresa llega hasta X en Antequera.
+- **Columna Tienda**: F(5) = "036 Málaga" / "014 Marbella" / "279 Mijas" (número + nombre); G(6) "Nombre" se queda con el
+  nombre solo (la lógica lo usa) pero se OCULTA en Antequera.
+- **Hodos (pestaña)**: listado premium agrupado por tienda + expedición (HODOS devuelve `expedicion` desde v92),
+  tarjetas con cada pedido como ficha, "Agrupación · N pedidos", tarjeta especial de SOBRANTE, resumen arriba y
+  selección por grupo. **Nunca `confirm()/alert()/prompt()` del navegador** (Pedro, 2026-10-05): usar
+  `confirmarModal` (Web.html y Panel.html).
 - Antequera NO sirve a Granada. El diálogo antiguo del menú (`AntequeraForm.html` + `volcarAntequeraTOP`)
   sigue vivo pero pierde los palés sin Pegase y ahora avisa: usar el Panel Arrastres.
 - Pruebas (fuera del repo, `Proyectos\_scratch\`): `test_antequera_v2.js` (análisis), `test_antequera_e2e.js`

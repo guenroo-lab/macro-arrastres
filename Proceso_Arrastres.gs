@@ -181,6 +181,9 @@ function _procesarArrastresNucleoCalculo_() {
     12:'Flujo',13:'Agrupación',14:'SSCC Agrupación',16:'Soporte',17:'SSCC',18:'Tipo Soporte',
     19:'LM',20:'EAN',21:'Articulo',22:'Unidades',23:'Unid' };
   Object.keys(cab).forEach(c => { top[0][c - 1] = cab[c]; });
+  // Antequera: V = Trae (enviadas), W = Pide (lo que pide el pedido, TOM) y X = Dif (+ sobrante / - faltante).
+  const hayAntequera = top.some((f, i) => i > 0 && i < uTOP && t_(f[cA]) === 'Antequera');
+  if (hayAntequera) { top[0][21] = 'Trae'; top[0][22] = 'Pide'; top[0][23] = 'Dif'; }
 
   // --- 7. Marcar LS-SIE (morado) — Módulo 4, con tope de complejidad por soporte.
   // Regla añadida (decisión de Pedro, 2026-08-06): un soporte con MÁS DE 2
@@ -296,7 +299,8 @@ function _procesarArrastresNucleoCalculo_() {
   wsTOP.hideColumns(3, 3);  // C:E
   // I (Proveedor) se oculta salvo en Antequera: ahí lleva el proveedor (493 = stock propio; en
   // tránsito, el de la columna ENTREGA del Detalle) y se imprime con la hoja TOP.
-  if (!filasFinal.some((f, i) => i > 0 && t_(f[cA]) === 'Antequera')) wsTOP.hideColumns(9);   // I
+  // Antequera: G (Nombre) se oculta porque F (Tienda) ya trae "014 Marbella" (G sigue ahí: la lógica lo usa).
+  if (!hayAntequera) wsTOP.hideColumns(9); else wsTOP.hideColumns(7);   // I (Proveedor) / G (Nombre)
   wsTOP.hideColumns(15);    // O
   wsTOP.hideColumns(26);    // Z
   _marca('escritura TOP (valores + colores + bordes + formatos)');
@@ -355,7 +359,7 @@ function _procesarArrastresNucleoCalculo_() {
     (nSoportesBloqueados ? ' (' + nSoportesBloqueados + ' soportes LS con >2 artículos, no retenidos)' : '') +
     ' · ' + res.total + ' nuevos → ' + det +
     ' · HODOS: ' + hodos.filas + ' líneas (' + hodos.sinTransporte + ' cerámica sin transporte, ' +
-    hodos.cc2 + ' CC2, ' + hodos.ls + ' LS, ' + (hodos.antequera ? hodos.antequera + ' Antequera, ' : '') + hodos.trameco + ' de TRAMECO)';
+    hodos.cc2 + ' CC2, ' + hodos.ls + ' LS, ' + (hodos.antequera ? hodos.antequera + ' Antequera, ' : '') + (hodos.sobrantes ? hodos.sobrantes + ' sobrante(s), ' : '') + hodos.trameco + ' de TRAMECO)';
   if (hodos.sinCatalogo) {
     msg = '⚠️ Falta la hoja CERAMICA (catálogo de LM): HODOS solo trae los de TRAMECO. · ' + msg;
   }

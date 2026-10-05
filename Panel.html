@@ -114,6 +114,24 @@
   .btn.send { background: rgba(189,215,238,.10); border-color: rgba(189,215,238,.30); }
   .btn.send:hover:not(:disabled) { background: rgba(189,215,238,.18); }
   .btn.send i { color: #9ec7ff; }
+
+  /* Cuadro de confirmación propio (nunca confirm() del navegador). Esc / clic fuera = cancelar. */
+  .cm-ov { position: fixed; inset: 0; z-index: 9999; display: none; align-items: center; justify-content: center; padding: 14px;
+    background: rgba(8,10,16,.66); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+  .cm-ov.open { display: flex; }
+  .cm-card { width: min(360px, 100%); background: #11141c; color: #f2f3f5; border: 1px solid rgba(255,255,255,.14);
+    border-radius: 16px; padding: 18px 18px 14px; box-shadow: 0 22px 54px rgba(0,0,0,.5); }
+  .cm-ico { width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 18px; margin-bottom: 10px;
+    background: rgba(158,199,255,.12); color: #9ec7ff; border: 1px solid rgba(158,199,255,.35); }
+  .cm-ico.peligro { background: rgba(227,6,19,.14); color: #ff7b82; border-color: rgba(227,6,19,.45); }
+  .cm-card h3 { font-size: 16px; line-height: 1.3; font-weight: 700; margin-bottom: 5px; }
+  .cm-card p { font-size: 12.5px; line-height: 1.5; color: #aeb3bd; }
+  .cm-acc { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+  .cm-btn { min-height: 42px; padding: 0 16px; border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer;
+    border: 1px solid rgba(255,255,255,.16); background: rgba(255,255,255,.05); color: #f2f3f5; }
+  .cm-btn:hover { background: rgba(255,255,255,.1); }
+  .cm-btn.si { background: #e30613; border-color: #e30613; color: #fff; }
+  .cm-btn:focus-visible { outline: 2px solid #9ec7ff; outline-offset: 2px; }
 </style>
 </head>
 <body>
@@ -354,8 +372,58 @@
     if (!f) { setStatus('⚠️ Pon la fecha de llegada.', 'err'); return; }
     run(btn, 'procesarMeco', [f, h]);
   }
+  // Cuadro de confirmación propio (sustituye a confirm()). o = { titulo, texto, ok, cancelar, peligro, icono }
+  var cmEnCurso = null, cmFoco = null;
+  function cmCerrar_(aceptado) {
+    var ov = document.getElementById('cmOv');
+    if (!ov || !cmEnCurso) return;
+    ov.classList.remove('open');
+    document.removeEventListener('keydown', cmTecla_, true);
+    var cb = cmEnCurso; cmEnCurso = null;
+    if (cmFoco && cmFoco.focus) { try { cmFoco.focus(); } catch (e) {} }
+    if (aceptado && cb.ok) cb.ok(); else if (!aceptado && cb.cancel) cb.cancel();
+  }
+  function cmTecla_(ev) {
+    if (ev.key === 'Escape') { ev.preventDefault(); ev.stopPropagation(); cmCerrar_(false); return; }
+    if (ev.key === 'Tab') {
+      var bs = document.querySelectorAll('#cmOv .cm-btn');
+      if (!bs.length) return;
+      if (ev.shiftKey && document.activeElement === bs[0]) { ev.preventDefault(); bs[bs.length - 1].focus(); }
+      else if (!ev.shiftKey && document.activeElement === bs[bs.length - 1]) { ev.preventDefault(); bs[0].focus(); }
+    }
+  }
+  function confirmarModal(o, onOk, onCancel) {
+    o = o || {};
+    var ov = document.getElementById('cmOv');
+    if (!ov) {
+      ov = document.createElement('div');
+      ov.id = 'cmOv'; ov.className = 'cm-ov';
+      ov.innerHTML = '<div class="cm-card" role="alertdialog" aria-modal="true" aria-labelledby="cmTit" aria-describedby="cmTxt">' +
+        '<div class="cm-ico" id="cmIco"><i class="fa-solid fa-circle-question"></i></div><h3 id="cmTit"></h3><p id="cmTxt"></p>' +
+        '<div class="cm-acc"><button type="button" class="cm-btn" id="cmNo"></button><button type="button" class="cm-btn si" id="cmSi"></button></div></div>';
+      document.body.appendChild(ov);
+      ov.addEventListener('mousedown', function(e){ if (e.target === ov) cmCerrar_(false); });
+      document.getElementById('cmNo').addEventListener('click', function(){ cmCerrar_(false); });
+      document.getElementById('cmSi').addEventListener('click', function(){ cmCerrar_(true); });
+    }
+    cmEnCurso = { ok: onOk, cancel: onCancel };
+    cmFoco = document.activeElement;
+    var peligro = !!o.peligro;
+    document.getElementById('cmIco').className = 'cm-ico' + (peligro ? ' peligro' : '');
+    document.getElementById('cmIco').innerHTML = '<i class="fa-solid ' + (o.icono || (peligro ? 'fa-triangle-exclamation' : 'fa-circle-question')) + '"></i>';
+    document.getElementById('cmTit').textContent = o.titulo || '¿Seguro?';
+    document.getElementById('cmTxt').innerHTML = escH(o.texto || '').replace(/\n/g, '<br>');
+    document.getElementById('cmTxt').style.display = o.texto ? '' : 'none';
+    document.getElementById('cmNo').textContent = o.cancelar || 'Cancelar';
+    document.getElementById('cmSi').textContent = o.ok || 'Aceptar';
+    ov.classList.add('open');
+    document.addEventListener('keydown', cmTecla_, true);
+    (peligro ? document.getElementById('cmNo') : document.getElementById('cmSi')).focus();
+  }
   function confirmRun(btn, fn, msg) {
-    if (confirm(msg)) run(btn, fn);
+    var largo = String(msg).length > 60;
+    confirmarModal({ titulo: largo ? '¿Continuar?' : msg, texto: largo ? msg : '', ok: 'Aceptar', peligro: /vaciar|borrar/i.test(msg) },
+      function(){ run(btn, fn); });
   }
 
   // Abre el diálogo de Antequera (PDF -> TOP)
@@ -458,17 +526,19 @@
   function quitarSel(btn) {
     var ks = clavesMarcadas();
     if (!ks.length) { setStatus('⚠️ No has marcado ningún soporte.', 'err'); return; }
-    if (!confirm('¿Quitar ' + ks.length + ' soporte(s) del pedido ' + val('dPedido') + '?')) return;
-    lock(btn, true);
-    setStatus('<i class="fa-solid fa-spinner spin"></i> Quitando…', 'run');
-    google.script.run
-      .withSuccessHandler(function(n){ setStatus('✅ ' + n + ' soporte(s) quitado(s).', 'ok'); buscarReten(btn); })
-      .withFailureHandler(function(e){ lock(btn, false); setStatus('⚠️ ' + e.message, 'err'); })
-      .quitarSoportes(val('dTienda'), val('dPedido'), ks);
+    var ped0 = val('dPedido'), tienda0 = val('dTienda');
+    confirmarModal({ titulo: '¿Quitar ' + ks.length + ' soporte' + (ks.length === 1 ? '' : 's') + ' del pedido ' + ped0 + '?', ok: 'Quitar', peligro: true, icono: 'fa-trash-can' }, function(){
+      lock(btn, true);
+      setStatus('<i class="fa-solid fa-spinner spin"></i> Quitando…', 'run');
+      google.script.run
+        .withSuccessHandler(function(n){ setStatus('✅ ' + n + ' soporte(s) quitado(s).', 'ok'); buscarReten(btn); })
+        .withFailureHandler(function(e){ lock(btn, false); setStatus('⚠️ ' + e.message, 'err'); })
+        .quitarSoportes(tienda0, ped0, ks);
+    });
   }
   function quitarTodo(btn) {
     if (!val('dPedido')) { setStatus('⚠️ Escribe un pedido.', 'err'); return; }
-    if (!confirm('¿Quitar TODO el pedido ' + val('dPedido') + ' de ' + val('dTienda') + '?')) return;
+    confirmarModal({ titulo: '¿Quitar TODO el pedido ' + val('dPedido') + ' de ' + val('dTienda') + '?', ok: 'Quitar todo', peligro: true, icono: 'fa-trash-can' }, function(){
     lock(btn, true);
     setStatus('<i class="fa-solid fa-spinner spin"></i> Quitando…', 'run');
     google.script.run
@@ -479,6 +549,7 @@
       })
       .withFailureHandler(function(e){ lock(btn, false); setStatus('⚠️ ' + e.message, 'err'); })
       .quitarPedido(val('dTienda'), val('dPedido'));
+    });
   }
 
   function enviar(btn, tienda, forzar) {
@@ -492,11 +563,10 @@
           if (r.otroDia) m += ' (' + r.otroDia + ' pendiente(s) para otro día, esperan)';
           setStatus(m, '');
         } else if (r.estado === 'falta_expedicion') {
-          if (confirm('Hay ' + r.sinExp + ' de ' + r.total + ' líneas SIN Expedición en ' + tienda + '.\n¿Enviar igualmente?')) {
-            enviar(btn, tienda, true);
-          } else {
-            setStatus('Envío cancelado. Rellena la Expedición y vuelve a enviar.', '');
-          }
+          confirmarModal({ titulo: 'Faltan expediciones en ' + tienda, texto: 'Hay ' + r.sinExp + ' de ' + r.total + ' líneas SIN Expedición en ' + tienda + '.\n¿Enviar el correo igualmente?',
+            ok: 'Enviar igualmente', cancelar: 'No enviar', icono: 'fa-paper-plane' },
+            function(){ enviar(btn, tienda, true); },
+            function(){ setStatus('Envío cancelado. Rellena la Expedición y vuelve a enviar.', ''); });
         } else {
           setStatus('✅ ' + r.enviados + ' línea(s) enviada(s) a ' + tienda + ' · remitente ' + escH(r.remitente), 'ok');
         }

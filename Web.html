@@ -361,6 +361,11 @@
   .ant-chip { display: inline-block; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 7px; margin: 0 4px 3px 0; border: 1px solid var(--color-border); }
   .ant-chip.si { background: var(--color-success); color: #fff; border-color: var(--color-success); }
   .ant-chip.no { background: var(--color-surface-solid); color: var(--color-text); }
+  .ant-opt { display: flex; align-items: center; gap: 9px; font-size: 12.5px; margin: 0 0 9px; color: var(--color-text); cursor: pointer; }
+  .ant-opt input { width: 18px; height: 18px; accent-color: var(--color-accent); cursor: pointer; }
+  .ant-kpi.sob { background: color-mix(in srgb, var(--color-warn) 16%, var(--color-bg)); border-color: color-mix(in srgb, var(--color-warn) 45%, var(--color-bg)); }
+  .ant-sob { display: inline-block; font-size: 11px; font-weight: 800; padding: 1px 7px; border-radius: 999px; margin-left: 4px; background: color-mix(in srgb, var(--color-warn) 24%, var(--color-bg)); border: 1px solid color-mix(in srgb, var(--color-warn) 55%, var(--color-bg)); color: var(--color-text); }
+  .ant-fal { display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 999px; margin-left: 4px; background: var(--color-accent-bg); border: 1px solid var(--color-accent-border); color: var(--color-danger); }
   .ant-chip.dudoso { background: var(--color-accent-bg); color: var(--color-danger); border-color: var(--color-accent-border); }
   .reten-table tbody tr:last-child td { border-bottom: none; }
   .reten-table td.ped { font-weight: 800; color: var(--color-text); font-size: 13.5px; }
@@ -402,6 +407,105 @@
   }
   .hodos-selall input { width: 18px; height: 18px; accent-color: var(--color-accent); cursor: pointer; }
   .hodos-note-inline { font-size: 11px; color: var(--color-text-dim); margin-top: 10px; line-height: 1.5; }
+
+  /* Pestaña Hodos · listado de etiquetas (2026-10-05): resumen, grupos por tienda y expedición,
+     tarjetas con los pedidos como fichas, color de tienda siempre presente y selección visible.
+     Solo tokens del tema (claro y oscuro); --th lo da .tienda.<tienda>. */
+  #hodosLista { display: block; }
+  .hd-resumen { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 12px; }
+  .hd-kpi { min-width: 92px; padding: 8px 14px; border-radius: 11px; border: 1px solid var(--color-border); background: var(--color-surface); }
+  .hd-kpi b { display: block; font-size: 21px; line-height: 1.1; color: var(--color-text); font-variant-numeric: tabular-nums; }
+  .hd-kpi span { font-size: 10.5px; text-transform: uppercase; letter-spacing: .4px; color: var(--color-text-muted); }
+  .hd-kpi.agr { background: var(--color-accent-bg); border-color: var(--color-accent-border); }
+  .hd-kpi.sob { background: color-mix(in srgb, var(--color-warn) 16%, var(--color-bg)); border-color: color-mix(in srgb, var(--color-warn) 45%, var(--color-bg)); }
+  .hd-sob-tag { font-size: 11px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; padding: 3px 10px; border-radius: 999px; color: var(--color-text);
+    background: color-mix(in srgb, var(--color-warn) 26%, var(--color-bg)); border: 1px solid color-mix(in srgb, var(--color-warn) 60%, var(--color-bg)); }
+  .hd-sob-tag i { margin-right: 5px; color: var(--color-warn); }
+  .hd-card.sob .hd-ped { background: transparent; border-color: transparent; padding-left: 0; font-size: 19px; }
+  .hd-grupo { margin: 0 0 18px; }
+  .hd-grupo-cab {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 9px 13px; margin-bottom: 9px;
+    border-radius: 11px; border: 1px solid color-mix(in srgb, var(--th, var(--color-accent)) 34%, var(--color-border));
+    border-left: 4px solid var(--th, var(--color-accent));
+    background: color-mix(in srgb, var(--th, var(--color-accent)) 13%, var(--color-surface));
+  }
+  .hd-grupo-cab input[type=checkbox] { width: 19px; height: 19px; accent-color: var(--th, var(--color-accent)); cursor: pointer; flex-shrink: 0; }
+  .hd-grupo-tit { font-size: 14px; font-weight: 800; letter-spacing: .2px; color: var(--color-text); }
+  .hd-grupo-tit i { margin-right: 6px; color: var(--th, var(--color-accent)); }
+  .hd-grupo-n { margin-left: auto; font-size: 12px; color: var(--color-text-muted); }
+  .hd-chip-tienda {
+    font-size: 11px; font-weight: 800; letter-spacing: .4px; text-transform: uppercase; padding: 3px 9px; border-radius: 999px;
+    color: var(--color-text); border: 1px solid var(--th, var(--color-border));
+    background: color-mix(in srgb, var(--th, var(--color-accent)) 26%, var(--color-bg));
+  }
+  .hd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 10px; }
+  .hd-card {
+    display: flex; align-items: flex-start; gap: 12px; padding: 13px 14px; cursor: pointer; position: relative;
+    background: var(--color-surface); border: 1px solid var(--color-border);
+    border-left: 4px solid var(--th, var(--color-accent)); border-radius: 12px;
+    box-shadow: 0 1px 0 rgba(255,255,255,.03) inset, 0 4px 12px rgba(0,0,0,.08);
+    transition: transform .15s, box-shadow .15s, border-color .15s, background .15s;
+  }
+  .hd-card:hover { transform: translateY(-1px); box-shadow: 0 1px 0 rgba(255,255,255,.04) inset, 0 8px 18px rgba(0,0,0,.14); }
+  .hd-card.sel {
+    border-color: var(--th, var(--color-accent));
+    background: color-mix(in srgb, var(--th, var(--color-accent)) 14%, var(--color-surface));
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--th, var(--color-accent)) 45%, transparent), 0 6px 16px rgba(0,0,0,.12);
+  }
+  .hd-card input[type=checkbox] { width: 20px; height: 20px; margin-top: 2px; flex-shrink: 0; accent-color: var(--th, var(--color-accent)); cursor: pointer; }
+  .hd-cuerpo { display: flex; flex-direction: column; gap: 7px; min-width: 0; flex: 1; }
+  .hd-peds { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 5px; }
+  .hd-ped {
+    font-size: 17px; font-weight: 800; letter-spacing: .3px; font-variant-numeric: tabular-nums; color: var(--color-text);
+    padding: 2px 9px; border-radius: 8px; background: var(--color-surface-solid); border: 1px solid var(--color-border);
+  }
+  .hd-card:not(.agr) .hd-ped { background: transparent; border-color: transparent; padding-left: 0; font-size: 19px; }
+  .hd-mas { color: var(--color-text-dim); font-weight: 800; font-size: 15px; }
+  .hd-agr {
+    align-self: flex-start; font-size: 10.5px; font-weight: 800; letter-spacing: .4px; text-transform: uppercase;
+    padding: 3px 9px; border-radius: 999px; color: var(--color-text);
+    background: var(--color-accent-bg); border: 1px solid var(--color-accent-border);
+  }
+  .hd-agr i { margin-right: 5px; color: var(--color-accent); }
+  .hd-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 11.5px; color: var(--color-text-muted); }
+  .hd-meta i { margin-right: 5px; color: var(--th, var(--color-accent)); }
+  .hd-vacio { grid-column: 1 / -1; padding: 30px; text-align: center; font-size: 13px; color: var(--color-text-muted); }
+  .hd-vacio i { display: block; font-size: 26px; margin-bottom: 8px; color: var(--color-success); }
+  @media (prefers-reduced-motion: reduce) { .hd-card { transition: none; } .hd-card:hover { transform: none; } }
+
+  /* Cuadro de confirmación propio (nunca confirm() del navegador: sale con el dominio feo de Google y
+     rompe el diseño). Solo tokens del tema. Esc / clic fuera = cancelar. */
+  .cm-ov {
+    position: fixed; inset: 0; z-index: 9999; display: none; align-items: center; justify-content: center; padding: 16px;
+    background: rgba(8, 10, 16, .58); -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px);
+  }
+  .cm-ov.open { display: flex; animation: cmFade .16s ease-out; }
+  .cm-card {
+    width: min(440px, 100%); background: var(--color-surface-solid); color: var(--color-text);
+    border: 1px solid var(--color-border); border-radius: 18px; padding: 22px 22px 18px;
+    box-shadow: 0 24px 60px rgba(0,0,0,.35), 0 2px 0 rgba(255,255,255,.04) inset;
+    animation: cmPop .18s cubic-bezier(.2,.9,.3,1.2);
+  }
+  .cm-ico {
+    width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-bottom: 12px;
+    background: var(--color-info-bg); color: var(--color-info); border: 1px solid var(--color-info-border);
+  }
+  .cm-ico.peligro { background: var(--color-accent-bg); color: var(--color-danger); border-color: var(--color-accent-border); }
+  .cm-card h3 { margin: 0 0 6px; font-size: 18px; line-height: 1.3; font-weight: 800; letter-spacing: .1px; }
+  .cm-card p { margin: 0; font-size: 13.5px; line-height: 1.55; color: var(--color-text-muted); }
+  .cm-acc { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; flex-wrap: wrap; }
+  .cm-btn {
+    min-height: 44px; padding: 0 20px; border-radius: 11px; font-family: 'DM Sans', sans-serif; font-size: 13.5px; font-weight: 700;
+    cursor: pointer; touch-action: manipulation; border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text);
+    transition: background .15s, transform .15s;
+  }
+  .cm-btn:hover { background: var(--color-surface-hover); transform: translateY(-1px); }
+  .cm-btn.si { background: var(--color-accent); border-color: var(--color-accent); color: #fff; }
+  .cm-btn.si.peligro { background: var(--color-danger); border-color: var(--color-danger); }
+  .cm-btn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+  @keyframes cmFade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes cmPop { from { opacity: 0; transform: translateY(8px) scale(.97); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .cm-ov.open, .cm-card { animation: none; } .cm-btn:hover { transform: none; } }
 
   /* Barra de estado: oculta salvo que haya algo que decir (antes se quedaba
      con "Listo." fijo en todas las pestañas sin motivo). Éxito se autooculta;
@@ -618,6 +722,8 @@
         <label class="hodos-selall"><input type="checkbox" id="hodosSelAll" onchange="seleccionarTodoHodos(this.checked)"> Seleccionar todo</label>
       </div>
 
+      <div class="hd-resumen" id="hodosResumen" style="display:none"></div>
+
       <!-- Igual que HODOS: imprime TODAS las pendientes del origen y, al imprimir,
            se marcan como impresas y salen de la lista (no hay que marcarlas a mano). -->
       <button class="btn green" id="btnImprimirHodos" onclick="imprimirEtiquetasHodos()" disabled>
@@ -627,7 +733,7 @@
       <div class="reten-list" id="hodosLista"><div class="reten-empty">Cargando…</div></div>
 
       <div class="accion-bar" id="hodosAccionBar">
-        <button class="btn red half" onclick="borrarSeleccionHodos()"><i class="fa-solid fa-trash-can"></i><span>Borrar seleccionadas</span></button>
+        <button class="btn red half" onclick="borrarSeleccionHodos()"><i class="fa-solid fa-trash-can"></i><span id="txtBorrarHodos">Borrar seleccionadas</span></button>
       </div>
 
       <button class="btn" onclick="marcarImpresasHodos()">
@@ -681,6 +787,62 @@
     var open = el.classList.toggle('open');
     var ic = btn && btn.querySelector('i');
     if (ic) ic.className = open ? 'fa-solid fa-chevron-up' : 'fa-solid fa-plus';
+  }
+
+  // ---------- Cuadro de confirmación propio (sustituye a confirm()) ----------
+  // o = { titulo, texto, ok, cancelar, peligro, icono }; onOk() se llama solo si se acepta, onCancel() si no.
+  // El texto admite saltos de línea ("\n"); todo se escapa aquí, pasa solo texto plano.
+  var cmEnCurso = null, cmFoco = null;
+  function cmCerrar_(aceptado) {
+    var ov = document.getElementById('cmOv');
+    if (!ov || !cmEnCurso) return;
+    ov.classList.remove('open');
+    document.removeEventListener('keydown', cmTecla_, true);
+    var cb = cmEnCurso; cmEnCurso = null;
+    if (cmFoco && cmFoco.focus) { try { cmFoco.focus(); } catch (e) {} }
+    if (aceptado && cb.ok) cb.ok(); else if (!aceptado && cb.cancel) cb.cancel();
+  }
+  function cmTecla_(ev) {
+    if (ev.key === 'Escape') { ev.preventDefault(); ev.stopPropagation(); cmCerrar_(false); return; }
+    if (ev.key === 'Tab') {   // el foco no se escapa del cuadro
+      var bs = document.querySelectorAll('#cmOv .cm-btn');
+      if (!bs.length) return;
+      var primero = bs[0], ultimo = bs[bs.length - 1];
+      if (ev.shiftKey && document.activeElement === primero) { ev.preventDefault(); ultimo.focus(); }
+      else if (!ev.shiftKey && document.activeElement === ultimo) { ev.preventDefault(); primero.focus(); }
+    }
+  }
+  function confirmarModal(o, onOk, onCancel) {
+    o = o || {};
+    var ov = document.getElementById('cmOv');
+    if (!ov) {
+      ov = document.createElement('div');
+      ov.id = 'cmOv'; ov.className = 'cm-ov';
+      ov.innerHTML = '<div class="cm-card" role="alertdialog" aria-modal="true" aria-labelledby="cmTit" aria-describedby="cmTxt">' +
+        '<div class="cm-ico" id="cmIco"><i class="fa-solid fa-circle-question"></i></div>' +
+        '<h3 id="cmTit"></h3><p id="cmTxt"></p>' +
+        '<div class="cm-acc"><button type="button" class="cm-btn" id="cmNo"></button><button type="button" class="cm-btn si" id="cmSi"></button></div></div>';
+      document.body.appendChild(ov);
+      ov.addEventListener('mousedown', function(e){ if (e.target === ov) cmCerrar_(false); });
+      document.getElementById('cmNo').addEventListener('click', function(){ cmCerrar_(false); });
+      document.getElementById('cmSi').addEventListener('click', function(){ cmCerrar_(true); });
+    }
+    cmEnCurso = { ok: onOk, cancel: onCancel };
+    cmFoco = document.activeElement;
+    var peligro = !!o.peligro;
+    document.getElementById('cmIco').className = 'cm-ico' + (peligro ? ' peligro' : '');
+    document.getElementById('cmIco').innerHTML = '<i class="fa-solid ' + escH(o.icono || (peligro ? 'fa-triangle-exclamation' : 'fa-circle-question')) + '"></i>';
+    document.getElementById('cmTit').textContent = o.titulo || '¿Seguro?';
+    document.getElementById('cmTxt').innerHTML = escH(o.texto || '').replace(/\n/g, '<br>');
+    document.getElementById('cmTxt').style.display = o.texto ? '' : 'none';
+    document.getElementById('cmNo').textContent = o.cancelar || 'Cancelar';
+    var si = document.getElementById('cmSi');
+    si.textContent = o.ok || 'Aceptar';
+    si.className = 'cm-btn si' + (peligro ? ' peligro' : '');
+    ov.classList.add('open');
+    document.addEventListener('keydown', cmTecla_, true);
+    // Si destruye algo, el foco empieza en Cancelar (un Enter despistado no borra nada).
+    (peligro ? document.getElementById('cmNo') : si).focus();
   }
 
   // ---------- Pestañas ----------
@@ -1060,7 +1222,7 @@
           pintarPlan(r);
           var rev = r.resumen.revisar;
           setStatusAnt(r.palets.length + ' palés analizados: ' + r.resumen.retener + ' con retención, ' + r.resumen.etiqueta + ' con etiqueta' +
-            (r.resumen.mixtos ? ', ' + r.resumen.mixtos + ' mixtos' : '') + (rev ? ' · ' + rev + ' por REVISAR' : '') + '. Revisa la vista previa y pulsa "Procesar Antequera".', rev ? 'err' : 'ok');
+            (r.resumen.mixtos ? ', ' + r.resumen.mixtos + ' mixtos' : '') + (r.resumen.sobrantes ? ', ' + r.resumen.sobrantes + ' sobrante(s) con etiqueta' : '') + (rev ? ' · ' + rev + ' por REVISAR' : '') + '. Revisa la vista previa y pulsa "Procesar Antequera".', rev ? 'err' : 'ok');
         })
         .withFailureHandler(function(e){ if (mi !== seq) return; lockAnt(false); plan = null; setStatusAnt(e.message, 'err'); })
         .analizarAntequera(entradaDe(docs));
@@ -1085,7 +1247,11 @@
         '<div class="ant-kpi ret"><b>' + r.resumen.retener + '</b><span>retener</span></div>' +
         '<div class="ant-kpi eti"><b>' + r.resumen.etiqueta + '</b><span>etiqueta</span></div>' +
         (r.resumen.mixtos ? '<div class="ant-kpi mix"><b>' + r.resumen.mixtos + '</b><span>mixtos</span></div>' : '') +
+        (r.resumen.sobrantes ? '<div class="ant-kpi sob"><b>' + r.resumen.sobrantes + '</b><span>sobrantes · ' + r.resumen.udsSobrantes + ' uds</span></div>' : '') +
         '<div class="ant-kpi ' + (r.resumen.revisar ? 'rev' : '') + '"><b>' + r.resumen.revisar + '</b><span>revisar</span></div></div>';
+      if (r.resumen.sobrantes) {
+        h += '<label class="ant-opt"><input type="checkbox" id="antSobrantes" checked> Crear etiqueta HODOS de los <b>' + r.resumen.sobrantes + ' sobrante(s)</b> (' + r.resumen.udsSobrantes + ' uds que trae el palé de más y no corresponden a ningún pedido)</label>';
+      }
       var c = r.cuadre, cuadreOk = c.hayBultos && !c.faltanEnResumen.length && !c.sobranEnResumen.length &&
         (c.palesDeclarados == null || c.palesDeclarados === c.palesContados) && (c.bultosDeclarados == null || c.bultosDeclarados === c.bultosContados);
       if (c.hayBultos){
@@ -1100,7 +1266,7 @@
       r.palets.forEach(function(p){
         // Un palé con líneas sin pedido va SIEMPRE en rojo (aunque lo resuelto ya tenga decisión).
         var cls = p.revisar ? 'revisar' : (p.accion==='RETENER' ? 'retener' : (p.accion==='MIXTO' ? 'mixto' : (p.accion==='ETIQUETA' ? 'etiqueta' : 'revisar')));
-        var lleva = p.lineas.slice(0,3).map(function(l){ return escH(l.lm) + ' ×' + l.uds + (l.ean ? ' <small>' + escH(l.ean) + '</small>' : ''); }).join('<br>') + (p.lineas.length > 3 ? '<br>+' + (p.lineas.length-3) + ' más' : '');
+        var lleva = p.lineas.slice(0,3).map(function(l){ return escH(l.lm) + ' ×' + l.uds + (l.pide != null ? ' <small>pide ' + l.pide + '</small>' : '') + (l.sobra ? '<span class="ant-sob">+' + l.sobra + ' sobra</span>' : '') + (l.falta ? '<span class="ant-fal">−' + l.falta + ' falta</span>' : '') + (l.ean ? ' <small>' + escH(l.ean) + '</small>' : ''); }).join('<br>') + (p.lineas.length > 3 ? '<br>+' + (p.lineas.length-3) + ' más' : '');
         var prov = p.proveedor ? p.proveedor.split(' / ').map(function(x){ return x==='493' ? '493 · stock propio' : x; }).join(' / ') : '';
         var pal = escH(p.flujoDoc) + (p.tipo ? ' · ' + (p.tipo==='C' ? 'bulto' : 'palé') : '') + (p.seccion ? ' · sec ' + escH(p.seccion) : '') + (prov ? '<br><small>' + escH(prov) + '</small>' : '');
         var pedidos = p.pedidos.map(chipPedido).join(' ') || '<span class="ant-chip dudoso">sin pedido</span>';
@@ -1122,6 +1288,9 @@
       lockAnt(true);
       setStatus('<i class="fa-solid fa-spinner spin"></i> Volcando ' + plan.top.length + ' líneas de Antequera en TOP…', 'run');
       var w = window.open('', '_blank');
+      // Sin la casilla de sobrantes marcada, se manda el TOP sin la diferencia positiva (no se crean etiquetas de sobrante).
+      var chkSob = $('antSobrantes');
+      var topEnvio = (chkSob && !chkSob.checked) ? plan.top.map(function(t){ if (!(t.dif > 0)) return t; var c = {}; Object.keys(t).forEach(function(k){ c[k] = t[k]; }); c.dif = ''; return c; }) : plan.top;
       var sinPedido = plan.top.filter(function(t){ return !t.pyxis; }).length;
       google.script.run
         .withSuccessHandler(function(){
@@ -1139,7 +1308,7 @@
             .procesarArrastresWeb();
         })
         .withFailureHandler(function(e){ lockAnt(false); if (w) w.close(); setStatus('⚠️ ' + e.message, 'err'); })
-        .volcarAntequeraLineasTOP(plan.top);
+        .volcarAntequeraLineasTOP(topEnvio);
     });
   })();
 
@@ -1246,12 +1415,15 @@
   function quitarSeleccion() {
     var ks = clavesMarcadas();
     if (!ks.length) { setStatus('⚠️ No has marcado ningún soporte.', 'err'); return; }
-    if (!confirm('¿Quitar ' + ks.length + ' soporte(s) de ' + tiendaActual + '?')) return;
-    setStatus('<i class="fa-solid fa-spinner spin"></i> Quitando…', 'run');
-    google.script.run
-      .withSuccessHandler(function(n){ setStatus('✅ ' + n + ' soporte(s) quitado(s).', 'ok'); cargarTienda(); })
-      .withFailureHandler(function(e){ setStatus('⚠️ ' + e.message, 'err'); })
-      .quitarClaves(tiendaActual, ks);
+    var tienda0 = tiendaActual;
+    confirmarModal({ titulo: '¿Quitar ' + ks.length + ' soporte' + (ks.length === 1 ? '' : 's') + ' de ' + tienda0 + '?',
+      texto: 'Se quitan de la lista de retenidos de ' + tienda0 + '.', ok: 'Quitar', peligro: true, icono: 'fa-trash-can' }, function(){
+      setStatus('<i class="fa-solid fa-spinner spin"></i> Quitando…', 'run');
+      google.script.run
+        .withSuccessHandler(function(n){ setStatus('✅ ' + n + ' soporte(s) quitado(s).', 'ok'); cargarTienda(); })
+        .withFailureHandler(function(e){ setStatus('⚠️ ' + e.message, 'err'); })
+        .quitarClaves(tienda0, ks);
+    });
   }
 
   function moverFecha() {
@@ -1392,38 +1564,129 @@
     } catch (e) { return String(iso); }
   }
 
+  // Los pedidos de una etiqueta vienen unidos con "+" cuando es una agrupación ("986950+986917").
+  function pedidosDeEtiqueta(e) {
+    var ps = String(e.numeroPedido || '').split('+').map(function(x){ return x.trim(); }).filter(Boolean);
+    return ps.length ? ps : ['—'];
+  }
+  // Etiqueta de sobrante (la crea Antequera): "SOBRANTE+3 UDS+LM 95237762+PED 986016".
+  function esSobranteHodos(e) { return String(e.numeroPedido || '').indexOf('SOBRANTE+') === 0; }
+  var CLASE_TIENDA_HODOS = { 'málaga': 'malaga', 'malaga': 'malaga', 'marbella': 'marbella', 'mijas': 'mijas', 'granada': 'granada' };
+  function claseTiendaHodos(destino) { return CLASE_TIENDA_HODOS[String(destino || '').toLowerCase()] || ''; }
+
+  function htmlTarjetaHodos(e, gi) {
+    if (esSobranteHodos(e)) {
+      var t = pedidosDeEtiqueta(e);   // [SOBRANTE, "3 UDS", "LM 123", "PED 456"]
+      return '<label class="hd-card tienda ' + claseTiendaHodos(e.destino) + ' sob">' +
+        '<input type="checkbox" data-id="' + escH(e.idUnico) + '" data-grupo="' + gi + '" onchange="actualizarBarraAccionesHodos()">' +
+        '<span class="hd-cuerpo">' +
+          '<span class="hd-peds"><span class="hd-sob-tag"><i class="fa-solid fa-triangle-exclamation"></i>Sobrante</span><span class="hd-ped">' + escH(t[1] || '') + '</span></span>' +
+          '<span class="hd-meta">' +
+            '<span><i class="fa-solid fa-barcode"></i>' + escH(t[2] || '') + '</span>' +
+            (t[3] ? '<span><i class="fa-solid fa-hashtag"></i>' + escH(t[3]) + '</span>' : '') +
+            '<span><i class="fa-solid fa-store"></i>' + escH(e.destino || '—') + '</span>' +
+            (e.fechaCreacion ? '<span><i class="fa-regular fa-clock"></i>' + escH(fmtFechaHodos(e.fechaCreacion)) + '</span>' : '') +
+          '</span>' +
+        '</span></label>';
+    }
+    var ps = pedidosDeEtiqueta(e), agr = ps.length > 1;
+    var peds = ps.map(function(p){ return '<span class="hd-ped">' + escH(p) + '</span>'; }).join('<span class="hd-mas">+</span>');
+    return '<label class="hd-card tienda ' + claseTiendaHodos(e.destino) + (agr ? ' agr' : '') + '">' +
+      '<input type="checkbox" data-id="' + escH(e.idUnico) + '" data-grupo="' + gi + '" onchange="actualizarBarraAccionesHodos()">' +
+      '<span class="hd-cuerpo">' +
+        '<span class="hd-peds">' + peds + '</span>' +
+        (agr ? '<span class="hd-agr"><i class="fa-solid fa-layer-group"></i>Agrupación · ' + ps.length + ' pedidos</span>' : '') +
+        '<span class="hd-meta">' +
+          '<span><i class="fa-solid fa-store"></i>' + escH(e.destino || '—') + '</span>' +
+          (e.soporteTotal > 1 ? '<span><i class="fa-solid fa-boxes-stacked"></i>Soporte ' + escH(e.soporteNum) + ' de ' + escH(e.soporteTotal) + '</span>' : '') +
+          (e.fechaCreacion ? '<span><i class="fa-regular fa-clock"></i>' + escH(fmtFechaHodos(e.fechaCreacion)) + '</span>' : '') +
+        '</span>' +
+      '</span></label>';
+  }
+
   function pintarEtiquetasHodos() {
     var cont = document.getElementById('hodosLista');
+    var resumen = document.getElementById('hodosResumen');
     var n = etiquetasHodosActuales.length;
     document.getElementById('btnImprimirHodos').disabled = (n === 0);
     document.getElementById('txtImprimirHodos').innerHTML =
       (n ? 'Imprimir las ' + n + ' pendientes de ' + escH(origenHodosActual) : 'Imprimir pendientes') +
       '<small>Al imprimir se marcan como impresas y salen de la lista</small>';
     if (!n) {
-      cont.innerHTML = '<div class="reten-empty">Sin etiquetas pendientes de ' + escH(origenHodosActual) + '.</div>';
+      resumen.style.display = 'none';
+      cont.innerHTML = '<div class="hd-vacio"><i class="fa-solid fa-circle-check"></i>Sin etiquetas pendientes de ' + escH(origenHodosActual) + '.</div>';
+      refrescarSeleccionHodos();
       return;
     }
-    cont.innerHTML = etiquetasHodosActuales.map(function(e){
-      return '<label class="reten-item">' +
-        '<input type="checkbox" data-id="' + escH(e.idUnico) + '" onchange="actualizarBarraAccionesHodos()">' +
-        '<span>' +
-          '<span class="ped">' + escH(e.numeroPedido || '—') + '</span><span class="chip-tipo">' + escH(e.destino || '') + '</span>' +
-          (e.soporteTotal > 1 ? '<div class="meta">Soporte ' + escH(e.soporteNum) + ' de ' + escH(e.soporteTotal) + '</div>' : '') +
-          (e.fechaCreacion ? '<div class="dia"><i class="fa-solid fa-calendar-day"></i> ' + escH(fmtFechaHodos(e.fechaCreacion)) + '</div>' : '') +
-        '</span></label>';
+    // Grupos por tienda + expedición, en el orden en que aparecen (HODOS las manda por fecha).
+    var grupos = [], idx = {}, nAgr = 0, nPeds = 0, nSob = 0;
+    etiquetasHodosActuales.forEach(function(e){
+      var k = (e.destino || '') + '|' + (e.expedicion || '');
+      if (!(k in idx)) { idx[k] = grupos.length; grupos.push({ destino: e.destino || '', expedicion: e.expedicion || '', items: [] }); }
+      grupos[idx[k]].items.push(e);
+      if (esSobranteHodos(e)) { nSob++; return; }
+      var ps = pedidosDeEtiqueta(e); nPeds += ps.length; if (ps.length > 1) nAgr++;
+    });
+    resumen.innerHTML =
+      '<div class="hd-kpi"><b>' + n + '</b><span>etiquetas</span></div>' +
+      (nAgr ? '<div class="hd-kpi agr"><b>' + nAgr + '</b><span>' + (nAgr === 1 ? 'agrupación' : 'agrupaciones') + '</span></div>' : '') +
+      (nSob ? '<div class="hd-kpi sob"><b>' + nSob + '</b><span>' + (nSob === 1 ? 'sobrante' : 'sobrantes') + '</span></div>' : '') +
+      '<div class="hd-kpi"><b>' + (n - nAgr - nSob) + '</b><span>de un pedido</span></div>' +
+      '<div class="hd-kpi"><b>' + nPeds + '</b><span>pedidos en total</span></div>';
+    resumen.style.display = 'flex';
+    cont.innerHTML = grupos.map(function(g, gi){
+      var agrG = g.items.filter(function(e){ return !esSobranteHodos(e) && pedidosDeEtiqueta(e).length > 1; }).length;
+      var sobG = g.items.filter(esSobranteHodos).length;
+      return '<div class="hd-grupo">' +
+        '<div class="hd-grupo-cab tienda ' + claseTiendaHodos(g.destino) + '">' +
+          '<input type="checkbox" class="hd-grp-chk" data-grupo="' + gi + '" title="Seleccionar este grupo" onchange="seleccionarGrupoHodos(this)">' +
+          '<span class="hd-grupo-tit"><i class="fa-solid fa-truck-fast"></i>' + (g.expedicion ? 'Expedición ' + escH(g.expedicion) : 'Pendientes de imprimir') + '</span>' +
+          '<span class="hd-chip-tienda">' + escH(g.destino || '—') + '</span>' +
+          '<span class="hd-grupo-n">' + g.items.length + ' etiqueta' + (g.items.length === 1 ? '' : 's') + (agrG ? ' · ' + agrG + (agrG === 1 ? ' agrupación' : ' agrupaciones') : '') + (sobG ? ' · ' + sobG + (sobG === 1 ? ' sobrante' : ' sobrantes') : '') + '</span>' +
+        '</div>' +
+        '<div class="hd-grid">' + g.items.map(function(e){ return htmlTarjetaHodos(e, gi); }).join('') + '</div>' +
+      '</div>';
     }).join('');
+    refrescarSeleccionHodos();
   }
 
   function clavesMarcadasHodos() {
-    return Array.prototype.slice.call(document.querySelectorAll('#hodosLista input:checked'))
+    return Array.prototype.slice.call(document.querySelectorAll('#hodosLista input[data-id]:checked'))
       .map(function(c){ return c.getAttribute('data-id'); });
   }
+  // Pinta el estado de la selección: tarjetas marcadas, casilla de cada grupo (marcada / a medias),
+  // "Seleccionar todo" y el contador del botón de borrar.
+  function refrescarSeleccionHodos() {
+    var cards = document.querySelectorAll('#hodosLista input[data-id]');
+    var total = cards.length, marcadas = 0, porGrupo = {};
+    Array.prototype.forEach.call(cards, function(c){
+      var g = c.getAttribute('data-grupo');
+      porGrupo[g] = porGrupo[g] || { t: 0, m: 0 };
+      porGrupo[g].t++;
+      if (c.checked) { porGrupo[g].m++; marcadas++; }
+      if (c.parentNode) c.parentNode.classList.toggle('sel', c.checked);
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('#hodosLista input.hd-grp-chk'), function(c){
+      var g = porGrupo[c.getAttribute('data-grupo')] || { t: 0, m: 0 };
+      c.checked = g.t > 0 && g.m === g.t;
+      c.indeterminate = g.m > 0 && g.m < g.t;
+    });
+    var todo = document.getElementById('hodosSelAll');
+    todo.checked = total > 0 && marcadas === total;
+    todo.indeterminate = marcadas > 0 && marcadas < total;
+    document.getElementById('txtBorrarHodos').textContent = marcadas ? 'Borrar seleccionadas (' + marcadas + ')' : 'Borrar seleccionadas';
+  }
   function actualizarBarraAccionesHodos() {
+    refrescarSeleccionHodos();
     document.getElementById('hodosAccionBar').classList.toggle('open', clavesMarcadasHodos().length > 0);
   }
+  function seleccionarGrupoHodos(chk) {
+    var g = chk.getAttribute('data-grupo');
+    Array.prototype.forEach.call(document.querySelectorAll('#hodosLista input[data-id][data-grupo="' + g + '"]'), function(c){ c.checked = chk.checked; });
+    actualizarBarraAccionesHodos();
+  }
   function seleccionarTodoHodos(marcar) {
-    Array.prototype.slice.call(document.querySelectorAll('#hodosLista input[type=checkbox]'))
-      .forEach(function(c){ c.checked = marcar; });
+    Array.prototype.forEach.call(document.querySelectorAll('#hodosLista input[data-id]'), function(c){ c.checked = marcar; });
     actualizarBarraAccionesHodos();
   }
 
@@ -1474,28 +1737,36 @@
   }
 
   function marcarImpresasHodos() {
-    if (!confirm('¿Marcar TODAS las etiquetas pendientes de ' + origenHodosActual + ' como impresas?')) return;
-    setStatus('<i class="fa-solid fa-spinner spin"></i> Marcando…', 'run');
-    google.script.run
-      .withSuccessHandler(function(r){ setStatus('✅ ' + (r.cantidad || 0) + ' etiqueta(s) marcada(s) como impresas.', 'ok'); cargarEtiquetasHodos(); })
-      .withFailureHandler(function(e){ setStatus('⚠️ ' + e.message, 'err'); })
-      .marcarImpresasEtiquetasHodos(origenHodosActual);
+    var origen0 = origenHodosActual;
+    confirmarModal({ titulo: '¿Marcar TODAS como impresas?',
+      texto: 'Todas las etiquetas pendientes de ' + origen0 + ' pasan a impresas y salen de la lista, sin imprimirlas.',
+      ok: 'Marcar como impresas', icono: 'fa-circle-check' }, function(){
+      setStatus('<i class="fa-solid fa-spinner spin"></i> Marcando…', 'run');
+      google.script.run
+        .withSuccessHandler(function(r){ setStatus('✅ ' + (r.cantidad || 0) + ' etiqueta(s) marcada(s) como impresas.', 'ok'); cargarEtiquetasHodos(); })
+        .withFailureHandler(function(e){ setStatus('⚠️ ' + e.message, 'err'); })
+        .marcarImpresasEtiquetasHodos(origen0);
+    });
   }
 
   function borrarSeleccionHodos() {
     var ids = clavesMarcadasHodos();
     if (!ids.length) { setStatus('⚠️ No has marcado ninguna etiqueta.', 'err'); return; }
-    if (!confirm('¿Borrar ' + ids.length + ' etiqueta(s) de ' + origenHodosActual + '? Solo se borran las que aún no se han cargado en un camión.')) return;
-    setStatus('<i class="fa-solid fa-spinner spin"></i> Borrando…', 'run');
-    google.script.run
-      .withSuccessHandler(function(r){
-        var msg = r.borrados.length + ' borrada(s).';
-        if (r.rechazados && r.rechazados.length) msg += ' ' + r.rechazados.length + ' no se pudo(pudieron) borrar (ya cargada(s) en un camión).';
-        setStatus('✅ ' + msg, 'ok');
-        cargarEtiquetasHodos();
-      })
-      .withFailureHandler(function(e){ setStatus('⚠️ ' + e.message, 'err'); })
-      .borrarEtiquetasHodos(ids);
+    var origen0 = origenHodosActual;
+    confirmarModal({ titulo: '¿Borrar ' + ids.length + ' etiqueta' + (ids.length === 1 ? '' : 's') + ' de ' + origen0 + '?',
+      texto: 'Solo se borran las que aún no se han cargado en un camión. Esta acción no se puede deshacer.',
+      ok: 'Borrar', peligro: true, icono: 'fa-trash-can' }, function(){
+      setStatus('<i class="fa-solid fa-spinner spin"></i> Borrando…', 'run');
+      google.script.run
+        .withSuccessHandler(function(r){
+          var msg = r.borrados.length + ' borrada(s).';
+          if (r.rechazados && r.rechazados.length) msg += ' ' + r.rechazados.length + ' no se pudo(pudieron) borrar (ya cargada(s) en un camión).';
+          setStatus('✅ ' + msg, 'ok');
+          cargarEtiquetasHodos();
+        })
+        .withFailureHandler(function(e){ setStatus('⚠️ ' + e.message, 'err'); })
+        .borrarEtiquetasHodos(ids);
+    });
   }
 
   // ---------- 3. Envío por correo ----------
@@ -1510,11 +1781,11 @@
           if (r.otroDia) m += ' (' + r.otroDia + ' pendiente(s) para otro día, esperan)';
           setStatus(m, 'ok');
         } else if (r.estado === 'falta_expedicion') {
-          if (confirm('Hay ' + r.sinExp + ' de ' + r.total + ' líneas SIN Expedición en ' + tienda + '.\n¿Enviar igualmente?')) {
-            enviar(btn, tienda, true);
-          } else {
-            setStatus('Envío cancelado. Rellena la Expedición y vuelve a enviar.', 'ok');
-          }
+          confirmarModal({ titulo: 'Faltan expediciones en ' + tienda,
+            texto: 'Hay ' + r.sinExp + ' de ' + r.total + ' líneas SIN Expedición en ' + tienda + '.\n¿Enviar el correo igualmente?',
+            ok: 'Enviar igualmente', cancelar: 'No enviar', icono: 'fa-paper-plane' },
+            function(){ enviar(btn, tienda, true); },
+            function(){ setStatus('Envío cancelado. Rellena la Expedición y vuelve a enviar.', 'ok'); });
         } else {
           setStatus('✅ ' + r.enviados + ' línea(s) enviada(s) a ' + tienda + ' · remitente ' + escH(r.remitente), 'ok');
           if (tienda === tiendaActual) cargarTienda();

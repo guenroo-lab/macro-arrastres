@@ -33,7 +33,9 @@ function htmlImprimirTOP() {
   const u = ws ? ws.getLastRow() : 0;
   if (u < 1) return { error: 'La hoja TOP no tiene datos.' };
 
-  const LIMITE = 22; // imprimir solo hasta la columna V
+  // Antequera imprime hasta la X (Trae · Pide · Dif); el resto de orígenes, hasta la V como siempre.
+  const infoOrigen = _datosCaratula_() || {};
+  const LIMITE = t_(infoOrigen.origen) === 'Antequera' ? 24 : 22;
   const lastCol = Math.min(ws.getLastColumn(), LIMITE);
   const rng = ws.getRange(1, 1, u, lastCol);
   const vals = rng.getDisplayValues();
@@ -45,7 +47,7 @@ function htmlImprimirTOP() {
   // Cabecera del documento. Se reutiliza la detección de la carátula, que sabe
   // distinguir la disposición de Meco (origen en el bloque info, transporte en
   // el Flete) de la de arrastres (origen en A, Exp en B).
-  const info = _datosCaratula_() || {};
+  const info = infoOrigen;
   const origen = t_(info.origen);
   const exp = t_(info.transporte);
   const fRecep = origen ? _fechaEnvioPorOrigen_(origen)
@@ -125,7 +127,7 @@ function htmlImprimirPyxisArrastres() {
   const u = ultimaFilaCol_(wsTOP, 11); // K
   if (u < 2) return { error: 'La hoja TOP no tiene datos.' };
   const top = wsTOP.getRange(1, 1, u, 26).getDisplayValues();
-  const cA = 0, cG = 6, cI = 8, cK = 10, cP = 15, cS = 18, cT = 19, cU = 20, cW = 22, cZ = 25;
+  const cA = 0, cF = 5, cG = 6, cI = 8, cK = 10, cP = 15, cS = 18, cT = 19, cU = 20, cV = 21, cW = 22, cZ = 25;
 
   const pedidos = [], visto = {};
   for (let i = 1; i < u; i++) {
@@ -139,7 +141,7 @@ function htmlImprimirPyxisArrastres() {
   pedidos.forEach((pedido, idx) => {
     let tienda = '';
     for (let i = 1; i < u; i++) {
-      if (String(top[i][cK]) === String(pedido) && t_(top[i][cZ]) === 'VERDE') { tienda = top[i][cG]; break; }
+      if (String(top[i][cK]) === String(pedido) && t_(top[i][cZ]) === 'VERDE') { tienda = (t_(top[i][cA]) === 'Antequera' && top[i][cF]) ? top[i][cF] : top[i][cG]; break; }
     }
     // Antequera (2026-10-05): el control lleva además PALÉ (soporte, para localizarlo al descargar) y
     // PROVEEDOR (493 = stock propio; en tránsito, el del Detalle), y las unidades de un mismo LM del
@@ -155,9 +157,9 @@ function htmlImprimirPyxisArrastres() {
         const s = String(top[i][cS]);
         if (!dictS[s]) {
           dictS[s] = grupos.length + 1;
-          grupos.push({ i: i, uds: parseFloat(String(top[i][cW]).replace(',', '.')), sops: [t_(top[i][cP])], provs: [t_(top[i][cI])] });
+          grupos.push({ i: i, uds: parseFloat(String(top[i][esAnt ? cV : cW]).replace(',', '.')), sops: [t_(top[i][cP])], provs: [t_(top[i][cI])] });
         } else if (esAnt) {
-          const g = grupos[dictS[s] - 1], n = parseFloat(String(top[i][cW]).replace(',', '.'));
+          const g = grupos[dictS[s] - 1], n = parseFloat(String(top[i][cV]).replace(',', '.'));
           if (!isNaN(n)) g.uds = (isNaN(g.uds) ? 0 : g.uds) + n;
           if (g.sops.indexOf(t_(top[i][cP])) === -1) g.sops.push(t_(top[i][cP]));
           if (t_(top[i][cI]) !== '' && g.provs.indexOf(t_(top[i][cI])) === -1) g.provs.push(t_(top[i][cI]));
@@ -172,15 +174,15 @@ function htmlImprimirPyxisArrastres() {
           esc_(top[i][cT]) + '</td><td>' + esc_(pedido) + '</td><td>' + esc_(top[i][cU]) +
           '</td><td>' + esc_(top[i][cW]) + '</td><td></td></tr>';
       } else {
-        const uds = isNaN(g.uds) ? top[i][cW] : String(Math.round(g.uds * 100) / 100);
-        filas += '<tr><td>' + esc_(top[i][cG]) + '</td><td>' + esc_(g.sops.filter(x => x !== '').join(' / ')) + '</td><td>' +
+        const trae = isNaN(g.uds) ? top[i][cV] : String(Math.round(g.uds * 100) / 100);
+        filas += '<tr><td>' + esc_(top[i][cF] || top[i][cG]) + '</td><td>' + esc_(g.sops.filter(x => x !== '').join(' / ')) + '</td><td>' +
           esc_(g.provs.filter(x => x !== '').join(' / ')) + '</td><td>' + esc_(top[i][cS]) + '</td><td>' +
           esc_(top[i][cT]) + '</td><td>' + esc_(pedido) + '</td><td>' + esc_(top[i][cU]) +
-          '</td><td>' + esc_(uds) + '</td><td></td></tr>';
+          '</td><td>' + esc_(trae) + '</td><td>' + esc_(top[i][cW]) + '</td><td></td></tr>';
       }
     });
     const cabTabla = esAnt
-      ? '<th>TIENDA</th><th>PALÉ</th><th>PROVEEDOR</th><th>LM</th><th>EAN</th><th>PEDIDO</th><th>ARTÍCULO</th><th>Unidades</th><th>Check</th>'
+      ? '<th>TIENDA</th><th>PALÉ</th><th>PROVEEDOR</th><th>LM</th><th>EAN</th><th>PEDIDO</th><th>ARTÍCULO</th><th>Trae</th><th>Pide</th><th>Check</th>'
       : '<th>TIENDA</th><th>LM</th><th>EAN</th><th>PEDIDO</th><th>ARTÍCULO</th><th>Unidades</th><th>Check</th>';
     cuerpo += '<div' + (idx < pedidos.length - 1 ? ' class="pb"' : '') + '>' +
       '<h1>Control de pedido · Arrastres</h1>' +

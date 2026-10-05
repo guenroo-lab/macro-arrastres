@@ -120,7 +120,7 @@ function _anqAnalizar_(entrada, tomDatos) {
       soporte: sop, flujo: (t_(r.flujo) || 'CC').toUpperCase(), esStock: esStock,
       lmRaw: lmRaw, lm: _anqLm_(lmRaw), uds: _anqNum_(r.unidades), ean: t_(r.ean).replace(/\D/g, ''),
       pyxMensaje: m ? m[1] : '', exp: t_(r.exp).replace(/^0+/, ''), cliente: t_(r.cliente),
-      pyxis: '', pegase: '', como: '', desc: '', aviso: '', proveedor: ''
+      pyxis: '', pegase: '', como: '', desc: '', aviso: '', proveedor: '', pide: null, sobra: 0, falta: 0
     });
   });
   Object.keys(omitidos).forEach(s => avisos.push('Palé ' + s + ' marcado "Ya entregado" en el Detalle: se omite.'));
@@ -202,6 +202,36 @@ function _anqAnalizar_(entrada, tomDatos) {
     if (dc && dc.entrega) l.proveedor = _anqProveedor_(dc.entrega);
   });
 
+  // ---- Unidades: lo que TRAE el palé (Resumen) frente a lo que PIDE el pedido (TOM) ----
+  // Se compara por pedido + LM en toda la expedición (no por palé). Si trae MÁS de lo que pide, el
+  // exceso es SOBRANTE: no corresponde a ningún pedido y lleva su propia etiqueta HODOS. Si trae menos
+  // solo se avisa (puede ser una entrega parcial). El resultado se apunta en la ÚLTIMA línea del grupo.
+  const claveUds = l => l.pyxis + '|' + l.lm;
+  const pedidasTOM = {};
+  lineas.forEach(l => {
+    if (!l.pyxis) return;
+    const k = claveUds(l);
+    if (k in pedidasTOM) return;
+    let tot = 0, hay = false;
+    (lineasPorLM[l.lm] || []).forEach(f => {
+      if (t_(f[iT.pyxis]) !== l.pyxis || t_(f[iT.tipoLinea]).toUpperCase().indexOf('SERVICIO') !== -1) return;
+      tot += _anqNum_(f[iT.cantidad]); hay = true;
+    });
+    pedidasTOM[k] = hay ? tot : null;
+  });
+  const traenPorClave = {}, ultimaLinea = {};
+  lineas.forEach((l, i) => { if (!l.pyxis) return; const k = claveUds(l); traenPorClave[k] = (traenPorClave[k] || 0) + l.uds; ultimaLinea[k] = i; });
+  const r2 = n => Math.round(n * 100) / 100;
+  lineas.forEach((l, i) => {
+    if (!l.pyxis) return;
+    const k = claveUds(l), pide = pedidasTOM[k];
+    l.pide = pide;
+    if (pide == null || ultimaLinea[k] !== i) return;
+    const dif = r2(traenPorClave[k] - pide);
+    if (dif > 0) l.sobra = dif; else if (dif < 0) l.falta = -dif;
+    l.traeTotal = r2(traenPorClave[k]);
+  });
+
   // ---- Agrupar por palé y decidir ----
   const bultosPorSop = {};
   if (bultos && bultos.soportes) bultos.soportes.forEach(b => { bultosPorSop[t_(b.soporte)] = b; });
@@ -221,9 +251,12 @@ function _anqAnalizar_(entrada, tomDatos) {
     if (l.pyxis) { if (p.pyx.indexOf(l.pyxis) === -1) p.pyx.push(l.pyxis); if (l.flujo === 'CC2') p.cc2[l.pyxis] = true; }
     else p.sinResolver.push(l.aviso || ('LM ' + l.lm + ': sin pedido'));
     if (l.pyxis && l.aviso) p.avisos.push(l.aviso);
+    if (l.sobra) p.avisos.push('SOBRANTE · LM ' + l.lm + ' del pedido ' + l.pyxis + ': trae ' + l.traeTotal + ' y pide ' + l.pide + ' -> sobran ' + l.sobra + ' uds (etiqueta HODOS de sobrante)');
+    if (l.falta) p.avisos.push('Faltan ' + l.falta + ' uds de LM ' + l.lm + ' del pedido ' + l.pyxis + ' (trae ' + l.traeTotal + ', pide ' + l.pide + '; puede ser entrega parcial)');
   });
 
-  const resumenFinal = { palets: palets.length, retener: 0, etiqueta: 0, mixtos: 0, revisar: 0, pedidosRetener: 0 };
+  const resumenFinal = { palets: palets.length, retener: 0, etiqueta: 0, mixtos: 0, revisar: 0, pedidosRetener: 0,
+    sobrantes: lineas.filter(l => l.sobra).length, udsSobrantes: r2(lineas.reduce((a, l) => a + (l.sobra || 0), 0)), faltas: lineas.filter(l => l.falta).length };
   palets.forEach(p => {
     const retener = [], etiqueta = [];
     p.pyx.forEach(py => {
@@ -284,7 +317,9 @@ function _anqAnalizar_(entrada, tomDatos) {
   const top = lineas.map(l => ({
     origen: 'Antequera', exp: exp, tienda: tienda,
     pegase: l.pegase, pyxis: l.pyxis, flujo: l.flujo, soporte: l.soporte,
-    lmRaw: l.lmRaw, uds: l.uds, ean: l.ean, proveedor: l.proveedor, desc: l.desc
+    lmRaw: l.lmRaw, uds: l.uds, ean: l.ean, proveedor: l.proveedor, desc: l.desc,
+    tiendaNum: ('000' + codTienda).slice(-3),
+    pide: l.pide == null ? '' : l.pide, dif: l.sobra ? l.sobra : (l.falta ? -l.falta : '')
   }));
 
   return {
@@ -292,7 +327,7 @@ function _anqAnalizar_(entrada, tomDatos) {
       remolque: bultos.remolque || '', precinto: bultos.precinto || '', peso: bultos.peso || '' } : null,
     cuadre: cuadre, avisos: avisos, resumen: resumenFinal, palets: palets.map(p => ({
       soporte: p.soporte, flujoDoc: p.flujoDoc, tipo: p.tipo, seccion: p.seccion, proveedor: p.proveedor || '', contenidosDetalle: p.contenidosDetalle,
-      lineas: p.lineas.map(l => ({ lm: l.lm, uds: l.uds, ean: l.ean, proveedor: l.proveedor, pyxis: l.pyxis, como: l.como })),
+      lineas: p.lineas.map(l => ({ lm: l.lm, uds: l.uds, ean: l.ean, proveedor: l.proveedor, pyxis: l.pyxis, como: l.como, pide: l.pide, sobra: l.sobra, falta: l.falta, traeTotal: l.traeTotal })),
       pedidos: p.pedidos, accion: p.accion, retener: p.retener, etiqueta: p.etiqueta, textoEtiqueta: p.textoEtiqueta,
       revisar: p.revisar, avisos: p.avisos
     })), top: top

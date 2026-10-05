@@ -35,7 +35,9 @@
  *   7. ANTEQUERA (2026-10-05): todo lo que NO se retiene lleva etiqueta, sin pasar
  *      por cerámica, transporte ni regla "99". Una línea por PALÉ (soporte del
  *      Resumen) con sus pedidos (Pyxis): uno, o varios unidos con "+" (agrupación).
- *      Las líneas VERDE/MORADO (retenidas) no entran. Ver AntequeraPlan.gs.
+ *      Las líneas VERDE/MORADO (retenidas) no entran. Además, cada SOBRANTE (el palé trae más
+ *      unidades de las que pide el pedido, col X > 0) lleva su propia etiqueta
+ *      "SOBRANTE + N UDS + LM + PED". Ver AntequeraPlan.gs.
  *
  * Además se vuelcan los pedidos de TRAMECO (lo que antes iba a FLUJOSTRA con
  * la "M" delante): ahora van a HODOS con el número limpio, sin prefijo.
@@ -204,8 +206,9 @@ function _generarHodos_(filasFinal, tom, uTOM, iTOM, cA, cB, cG, cJ, cK, cL, cP,
   const lsPorTienda = {};   // LS (Torija): independiente de porTienda, línea propia por soporte
   const TIENDAS = { 'MALAGA': 'Málaga', 'MARBELLA': 'Marbella', 'MIJAS': 'Mijas' };
   const antPorTienda = {};  // Antequera: una etiqueta por palé, independiente del resto de reglas
+  const antSobrantes = {};  // Antequera: una etiqueta por cada SOBRANTE (trae más de lo que pide el pedido)
   let sinCatalogo = (ceramica === null);
-  let nCeramica = 0, nSinTransporte = 0, nCC2 = 0, nLS = 0, nAntequera = 0;
+  let nCeramica = 0, nSinTransporte = 0, nCC2 = 0, nLS = 0, nAntequera = 0, nSobrantes = 0;
 
   const _grupo_ = (tienda, soporte, modo, origen, expedicion) => {
     if (!porTienda[tienda]) porTienda[tienda] = { soportes: {}, orden: [], sueltos: {}, ordenSueltos: [], origenSueltos: {}, expSueltos: {} };
@@ -232,6 +235,15 @@ function _generarHodos_(filasFinal, tom, uTOM, iTOM, cA, cB, cG, cJ, cK, cL, cP,
     // va a tienda con traza. Un palé con varios pedidos = una agrupación ("ped+ped").
     // Si el palé es mixto, los de transporte ya son VERDE y aquí solo quedan los otros.
     if (origenFila === 'Antequera') {
+      // SOBRANTE: el palé trae más unidades de las que pide el pedido (col X = Dif > 0, ver AntequeraPlan.gs).
+      // Esas unidades no corresponden a ningún pedido: etiqueta propia "SOBRANTE / N UDS / LM / PED", aunque
+      // el pedido se retenga (el exceso va a tienda, no se retiene).
+      const difA = parseFloat(String(fila[23] == null ? '' : fila[23]).replace(',', '.'));
+      if (difA > 0 && t_(fila[cK]) !== '' && t_(fila[cS]) !== '') {
+        if (!antSobrantes[tienda]) antSobrantes[tienda] = [];
+        antSobrantes[tienda].push({ texto: ['SOBRANTE', (Math.round(difA * 100) / 100) + ' UDS', 'LM ' + t_(fila[cS]), 'PED ' + t_(fila[cK])].join('+'), expedicion: expedicionFila });
+        nSobrantes++;
+      }
       const estA = t_(fila[25]);                                   // col Z: 'VERDE' | 'MORADO' | ''
       if (estA === 'VERDE' || estA === 'MORADO') continue;          // retenido: ya tiene traza por RETENIDOS
       const pyxA = t_(fila[cK]), sopA = t_(fila[cP]);
@@ -372,6 +384,10 @@ function _generarHodos_(filasFinal, tom, uTOM, iTOM, cA, cB, cG, cJ, cK, cL, cP,
         lineas.push({ tienda: tienda, texto: texto, origen: 'Antequera', expedicion: S.expedicion });
       });
     }
+    (antSobrantes[tienda] || []).forEach(x => {
+      salida.push([tienda, x.texto]);
+      lineas.push({ tienda: tienda, texto: x.texto, origen: 'Antequera', expedicion: x.expedicion });
+    });
   });
 
   // --- 3. Añadir los pedidos de TRAMECO (lo que antes iba a FLUJOSTRA).
@@ -404,6 +420,7 @@ function _generarHodos_(filasFinal, tom, uTOM, iTOM, cA, cB, cG, cJ, cK, cL, cP,
     cc2: nCC2,
     ls: nLS,
     antequera: nAntequera,
+    sobrantes: nSobrantes,
     trameco: tra.length,
     sinCatalogo: sinCatalogo,
     catalogoDeCache: !!_catalogoCeramica_.deCache

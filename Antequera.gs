@@ -188,32 +188,34 @@ function volcarAntequeraTOP(filas, mapaResumen) {
  *   S(18)=LM tal cual viene en el PDF (los códigos "48…" con sufijo los recorta el paso 0 de
  *   procesarArrastres; si se recortaran aquí se recortarían dos veces) · T(19)=EAN13 del
  *   Resumen (procesarArrastres solo lo completa desde la hoja EAN si falta) · U(20)=Artículo ·
- *   V(21) y W(22)=Unidades ENVIADAS (las del Resumen) · I(8)=Proveedor (493 = stock propio de
- *   Antequera; en tránsito, el de la columna ENTREGA del Detalle).
+ *   V(21)=Trae (unidades enviadas, del Resumen) · W(22)=Pide (lo que pide el pedido, de TOM) ·
+ *   X(23)=Dif (+ sobrante / - faltante; el sobrante genera etiqueta HODOS) · I(8)=Proveedor (493 =
+ *   stock propio de Antequera; en tránsito, el de la columna ENTREGA del Detalle) · F(5)="014 Marbella".
  */
 function volcarAntequeraLineasTOP(lineas) {
   if (!lineas || !lineas.length) throw new Error('No hay líneas que volcar. Sube los PDF y revisa la vista previa.');
   const malas = lineas.filter(l => !/^\d{5,}$/.test(t_((l || {}).soporte)));
   if (malas.length) throw new Error('Hay ' + malas.length + ' línea(s) sin soporte. Vuelve a subir los PDF.');
 
-  const ANCHO = 23; // A..W
+  const ANCHO = 24; // A..X
   const ss = SpreadsheetApp.getActive();
   const wsTOP = ss.getSheetByName(CFG.HOJAS.TOP);
   if (!wsTOP) throw new Error('No existe la hoja "' + CFG.HOJAS.TOP + '".');
 
   const cab = new Array(ANCHO).fill('');
-  cab[0] = 'Origen'; cab[1] = 'Exp'; cab[6] = 'Tienda'; cab[8] = 'Proveedor'; cab[9] = 'Pedido'; cab[10] = 'Pyxis';
+  cab[0] = 'Origen'; cab[1] = 'Exp'; cab[5] = 'Tienda'; cab[6] = 'Nombre'; cab[8] = 'Proveedor'; cab[9] = 'Pedido'; cab[10] = 'Pyxis';
   cab[11] = 'Flujo'; cab[12] = 'Agrupación'; cab[15] = 'Soporte'; cab[16] = 'SSCC';
-  cab[18] = 'LM'; cab[19] = 'EAN'; cab[20] = 'Articulo'; cab[21] = 'Unidades'; cab[22] = 'Unid';
+  cab[18] = 'LM'; cab[19] = 'EAN'; cab[20] = 'Articulo'; cab[21] = 'Trae'; cab[22] = 'Pide'; cab[23] = 'Dif';
 
   const matriz = [cab];
-  let sinPedido = 0;
+  let sinPedido = 0, sobrantes = 0;
   const palets = {};
   lineas.forEach(l => {
     const fila = new Array(ANCHO).fill('');
     fila[0]  = 'Antequera';
     fila[1]  = t_(l.exp);
-    fila[6]  = t_(l.tienda);
+    fila[5]  = (t_(l.tiendaNum) ? t_(l.tiendaNum) + ' ' : '') + t_(l.tienda);   // F = Tienda: "014 Marbella"
+    fila[6]  = t_(l.tienda);                       // G = nombre (lo usa la lógica; en Antequera se oculta)
     fila[8]  = t_(l.proveedor);                    // I = Proveedor: 493 si es stock de Antequera; si no, el de tránsito
     fila[9]  = t_(l.pegase) || t_(l.pyxis) || 'SIN PEDIDO';
     fila[10] = t_(l.pyxis);
@@ -224,13 +226,15 @@ function volcarAntequeraLineasTOP(lineas) {
     fila[18] = t_(l.lmRaw);
     fila[19] = t_(l.ean);                          // T = EAN13 del Resumen (procesarArrastres solo lo completa si falta)
     fila[20] = t_(l.desc);
-    // Unidades ENVIADAS (las del Resumen): V = "Unidades" (la que se imprime en la hoja TOP, como en
-    // Valencia/Torija) y W = "Unid" (la que lee el Control de pedido). Para Antequera procesarArrastres
-    // NO las sustituye por la cantidad pedida de TOM.
+    // V = "Trae": unidades ENVIADAS de esta línea (las del Resumen). W = "Pide": lo que pide el pedido (TOM,
+    // por pedido + LM). X = "Dif": + sobrante / - faltante, solo en la última línea del grupo; el sobrante
+    // genera una etiqueta HODOS (Hodos.gs regla 7). procesarArrastres no toca estas columnas en Antequera.
     fila[21] = l.uds == null ? '' : t_(l.uds);
-    fila[22] = fila[21];
+    fila[22] = (l.pide === '' || l.pide == null) ? '' : t_(l.pide);
+    fila[23] = (l.dif === '' || l.dif == null) ? '' : t_(l.dif);
     if (fila[10] === '') sinPedido++;
     palets[fila[15]] = true;
+    if (fila[23] !== '' && Number(fila[23]) > 0) sobrantes++;
     matriz.push(fila);
   });
 
@@ -244,7 +248,8 @@ function volcarAntequeraLineasTOP(lineas) {
   autoajustar_(wsTOP, 1, ANCHO);
 
   const msg = 'Antequera OK · ' + Object.keys(palets).length + ' palés · ' + lineas.length + ' líneas en TOP' +
-    (sinPedido ? ' · ⚠️ ' + sinPedido + ' línea(s) SIN pedido (REVISAR)' : '') + '.';
+    (sinPedido ? ' · ⚠️ ' + sinPedido + ' línea(s) SIN pedido (REVISAR)' : '') +
+    (sobrantes ? ' · ' + sobrantes + ' sobrante(s) con etiqueta HODOS' : '') + '.';
   ss.toast(msg, '📦 Antequera', 8);
   return msg;
 }
