@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html class="tema-black">
+<html class="tema-retro80s">
 <head>
 <base target="_top">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
@@ -36,38 +36,29 @@
     --color-accent: #d97a5f; --color-success: #2f7d43; --color-danger: #b03a2e;
     --color-info: #35618f; --color-warn: #92660c;
   }
-  html.tema-lavanda {
-    --color-bg: #f0eaf8; --color-surface-solid: #e2d5f0;
-    --color-surface: #e5d9f0; --color-surface-hover: #d5c2e8;
-    --color-border: #a98fc7;
-    --color-text: #322a45; --color-text-muted: #6c6284; --color-text-dim: #8a8099;
-    --color-accent: #8768c2; --color-success: #2f7d43; --color-danger: #b03a2e;
-    --color-info: #35618f; --color-warn: #92660c;
+  /* Retro 80s Color-Block: paleta vívida SOLO en cabecera/logo/acentos decorativos
+     (banda diagonal con paradas duras + texto en degradado). --color-accent usa el
+     índigo de la paleta (no el rosa neón) porque .tab.active y el badge de contador
+     pintan fondo sólido + texto blanco encima: blanco sobre rosa/turquesa/amarillo da
+     3-4:1 (bajo el mínimo WCAG 4.5:1), blanco sobre índigo da >10:1. El rosa/turquesa/
+     amarillo/rojo aparecen sin restricción en la banda decorativa y el texto en
+     degradado, donde no hay problema de contraste de fondo. */
+  html.tema-retro80s {
+    --color-bg: #0d0714; --color-surface-solid: #170f24;
+    --color-surface: rgba(255,255,255,.04); --color-surface-hover: rgba(255,255,255,.09);
+    --color-border: rgba(255,255,255,.14);
+    --color-text: #f5f0ff; --color-text-muted: #9083ab; --color-text-dim: #6f6289;
+    --color-accent: #3B2F85; --color-success: #00C5B5; --color-danger: #ff5a63;
+    --color-info: #00C5B5; --color-warn: #ffd54f;
   }
-  html.tema-ambar {
-    --color-bg: #120d08; --color-surface-solid: #1d1610;
-    --color-surface: rgba(255,205,140,.045); --color-surface-hover: rgba(255,205,140,.1);
-    --color-border: rgba(255,195,120,.14);
-    --color-text: #f5efe8; --color-text-muted: #c9b8a3; --color-text-dim: #8f7c67;
-    --color-accent: #f59e0b; --color-success: #5be584; --color-danger: #ff5a63;
-    --color-info: #9ec7ff; --color-warn: #ffd54f;
-  }
-  html.tema-oceano {
-    --color-bg: #050f1a; --color-surface-solid: #0d1e2e;
-    --color-surface: rgba(160,215,255,.045); --color-surface-hover: rgba(160,215,255,.1);
-    --color-border: rgba(140,205,255,.14);
-    --color-text: #e9f4ff; --color-text-muted: #9fb8cc; --color-text-dim: #6b8299;
-    --color-accent: #0ea5c4; --color-success: #5be584; --color-danger: #ff6b6b;
-    --color-info: #7dd3fc; --color-warn: #ffd54f;
-  }
-  html.tema-esmeralda {
-    --color-bg: #06120c; --color-surface-solid: #0e1f16;
-    --color-surface: rgba(170,255,205,.045); --color-surface-hover: rgba(170,255,205,.1);
-    --color-border: rgba(140,230,180,.14);
-    --color-text: #eafff4; --color-text-muted: #9fcbb0; --color-text-dim: #6b9280;
-    --color-accent: #10b981; --color-success: #5be584; --color-danger: #ff6b6b;
-    --color-info: #9ec7ff; --color-warn: #ffd54f;
-  }
+  html.tema-retro80s .head{position:relative;padding-bottom:8px;}
+  html.tema-retro80s .head::after{content:'';position:absolute;left:0;right:0;bottom:0;height:4px;border-radius:2px;
+    background:linear-gradient(90deg,#FF1493 0 20%,#00C5B5 20% 40%,#3B2F85 40% 60%,#FFD700 60% 80%,#FF2400 80% 100%);}
+  html.tema-retro80s .tit h1 span{background:linear-gradient(135deg,#FF1493 0%,#00C5B5 35%,#FFD700 70%,#FF2400 100%);
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+  html.tema-retro80s .head-logo{border:2px solid transparent;
+    background-image:linear-gradient(#0c0e13,#0c0e13),linear-gradient(135deg,#FF1493,#00C5B5,#3B2F85,#FFD700,#FF2400);
+    background-origin:border-box;background-clip:padding-box,border-box;}
   :root {
     --color-accent-bg: color-mix(in srgb, var(--color-accent) 16%, var(--color-bg));
     --color-accent-border: color-mix(in srgb, var(--color-accent) 45%, var(--color-bg));
@@ -127,10 +118,7 @@
   .sw-black { background: #080a10; }
   .sw-leroymerlin { background: linear-gradient(135deg,#3f7d32,#f5f4ee); }
   .sw-melocoton { background: linear-gradient(135deg,#d97a5f,#f7ede2); }
-  .sw-lavanda { background: linear-gradient(135deg,#8768c2,#f0eaf8); }
-  .sw-ambar { background: #f59e0b; }
-  .sw-oceano { background: linear-gradient(135deg,#0ea5c4,#0b1f33); }
-  .sw-esmeralda { background: #10b981; }
+  .sw-retro80s { background: linear-gradient(135deg,#FF1493,#00C5B5,#3B2F85,#FFD700,#FF2400); }
 
   /* Navegación por pestañas */
   .tabs { display: flex; gap: 6px; margin-bottom: 16px; background: var(--color-surface);
@@ -351,6 +339,16 @@
   .hodos-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
   .hodos-bar a { color: var(--color-info); font-size: 12.5px; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; }
   .hodos-bar a:hover { text-decoration: underline; }
+  /* Insignia numérica de etiquetas pendientes en las pestañas de origen —
+     misma que la barra lateral de HODOS (ámbar fijo con texto oscuro: se ve
+     igual en cualquier tema y sobre la pestaña activa). Oculta si es 0. */
+  .pill .tab-badge {
+    display: inline-block; margin-left: 8px; min-width: 22px; padding: 2px 7px; border-radius: 999px;
+    background: #ffc107; color: #111; font-size: 11.5px; font-weight: 700; line-height: 1.3;
+    text-align: center; font-variant-numeric: tabular-nums; vertical-align: middle;
+  }
+  .pill .tab-badge.vacio { display: none; }
+  #btnImprimirHodos:disabled { cursor: not-allowed; }
   .hodos-toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
   .hodos-toolbar .btn { margin-bottom: 0; }
   .hodos-selall {
@@ -386,13 +384,10 @@
       <p>TAISA · Leroy Merlin Málaga · web</p>
     </div>
     <div class="temas">
-      <button class="tema-sw sw-black activo" title="Negro" onclick="aplicarTema_('black')"></button>
+      <button class="tema-sw sw-black" title="Negro" onclick="aplicarTema_('black')"></button>
       <button class="tema-sw sw-leroymerlin" title="Leroy Merlin" onclick="aplicarTema_('leroymerlin')"></button>
       <button class="tema-sw sw-melocoton" title="Melocotón" onclick="aplicarTema_('melocoton')"></button>
-      <button class="tema-sw sw-lavanda" title="Lavanda" onclick="aplicarTema_('lavanda')"></button>
-      <button class="tema-sw sw-ambar" title="Ámbar" onclick="aplicarTema_('ambar')"></button>
-      <button class="tema-sw sw-oceano" title="Océano" onclick="aplicarTema_('oceano')"></button>
-      <button class="tema-sw sw-esmeralda" title="Esmeralda" onclick="aplicarTema_('esmeralda')"></button>
+      <button class="tema-sw sw-retro80s activo" title="Fresh Prince" onclick="aplicarTema_('retro80s')"></button>
     </div>
   </div>
 
@@ -564,10 +559,10 @@
       </div>
 
       <div class="pills">
-        <button class="pill active" id="pillOrigenMeco" onclick="cambiarOrigenHodos('Meco')">Meco</button>
-        <button class="pill" id="pillOrigenValencia" onclick="cambiarOrigenHodos('Valencia')">Valencia</button>
-        <button class="pill" id="pillOrigenTorija" onclick="cambiarOrigenHodos('Torija')">Torija</button>
-        <button class="pill" id="pillOrigenAntequera" onclick="cambiarOrigenHodos('Antequera')">Antequera</button>
+        <button class="pill active" id="pillOrigenMeco" onclick="cambiarOrigenHodos('Meco')">Meco<span class="tab-badge vacio" id="badgeHodosMeco"></span></button>
+        <button class="pill" id="pillOrigenValencia" onclick="cambiarOrigenHodos('Valencia')">Valencia<span class="tab-badge vacio" id="badgeHodosValencia"></span></button>
+        <button class="pill" id="pillOrigenTorija" onclick="cambiarOrigenHodos('Torija')">Torija<span class="tab-badge vacio" id="badgeHodosTorija"></span></button>
+        <button class="pill" id="pillOrigenAntequera" onclick="cambiarOrigenHodos('Antequera')">Antequera<span class="tab-badge vacio" id="badgeHodosAntequera"></span></button>
       </div>
 
       <div class="hodos-toolbar">
@@ -575,10 +570,15 @@
         <label class="hodos-selall"><input type="checkbox" id="hodosSelAll" onchange="seleccionarTodoHodos(this.checked)"> Seleccionar todo</label>
       </div>
 
+      <!-- Igual que HODOS: imprime TODAS las pendientes del origen y, al imprimir,
+           se marcan como impresas y salen de la lista (no hay que marcarlas a mano). -->
+      <button class="btn green" id="btnImprimirHodos" onclick="imprimirEtiquetasHodos()" disabled>
+        <i class="fa-solid fa-print"></i><span id="txtImprimirHodos">Imprimir pendientes<small>Al imprimir se marcan como impresas y salen de la lista</small></span>
+      </button>
+
       <div class="reten-list" id="hodosLista"><div class="reten-empty">Cargando…</div></div>
 
       <div class="accion-bar" id="hodosAccionBar">
-        <button class="btn green half" onclick="imprimirEtiquetasHodos()"><i class="fa-solid fa-print"></i><span>Imprimir</span></button>
         <button class="btn red half" onclick="borrarSeleccionHodos()"><i class="fa-solid fa-trash-can"></i><span>Borrar seleccionadas</span></button>
       </div>
 
@@ -594,18 +594,20 @@
 
 <script>
   // ---------- Temas (6, en <html>) ----------
-  var TEMAS_ = ['black','leroymerlin','melocoton','lavanda','ambar','oceano','esmeralda'];
-  function aplicarTema_(tema) {
+  var TEMAS_ = ['black','leroymerlin','melocoton','retro80s'];
+  function aplicarTema_(tema, noGuardar) {
     document.documentElement.className = 'tema-' + tema;
     document.querySelectorAll('.tema-sw').forEach(function(b){
       b.classList.toggle('activo', b.classList.contains('sw-' + tema));
     });
-    try { localStorage.setItem('panelArrastresTema', tema); } catch (e) {}
+    if (!noGuardar) { try { localStorage.setItem('panelArrastresTema', tema); } catch (e) {} }
   }
   (function () {
     var guardado = null;
     try { guardado = localStorage.getItem('panelArrastresTema'); } catch (e) {}
-    if (guardado && TEMAS_.indexOf(guardado) !== -1) aplicarTema_(guardado);
+    // Sin elección guardada: Fresh Prince por defecto (sin guardarlo como elección explícita).
+    var inicial = (guardado && TEMAS_.indexOf(guardado) !== -1) ? guardado : 'retro80s';
+    aplicarTema_(inicial, inicial !== guardado);
   })();
 
   // ---------- helpers compartidos ----------
@@ -641,8 +643,13 @@
       document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1)).classList.toggle('active', activo);
       document.getElementById('tabBtn' + t.charAt(0).toUpperCase() + t.slice(1)).classList.toggle('active', activo);
     });
+    tabActual = nombre;
     if (nombre === 'retenidos' && !tabsCargadas.retenidos) { tabsCargadas.retenidos = true; cargarTienda(); }
-    if (nombre === 'hodos' && !tabsCargadas.hodos) { tabsCargadas.hodos = true; cargarEtiquetasHodos(); }
+    if (nombre === 'hodos') {
+      if (!tabsCargadas.hodos) { tabsCargadas.hodos = true; cargarEtiquetasHodos(); }
+      actualizarBadgesHodos();          // al entrar: los 4 números al día
+      arrancarRefrescoBadgesHodos();
+    }
   }
 
   // ---------- 1. Cajones ----------
@@ -1125,22 +1132,85 @@
     cargarEtiquetasHodos();
   }
 
+  // Insignias numéricas (como la barra lateral de HODOS): cuántas etiquetas
+  // pendientes tiene cada origen. Se refrescan al entrar en la pestaña, al
+  // volver a la ventana y cada minuto — las etiquetas las crea el proceso de
+  // arrastres/otros sistemas sin que esta pantalla se entere. Una consulta
+  // ligera cuenta los 4 orígenes a la vez.
+  var INTERVALO_BADGES_HODOS_MS = 60000;
+  var secuenciaBadgesHodos = 0;        // ordena "cuándo" ocurre cada cosa
+  var badgeHodosDeListaSeq = {};       // origen -> secuencia de la última vez que su LISTA fijó su insignia
+  var badgesHodosEnCurso = false;
+  var badgesHodosIntervalo = null;
+  var tabActual = 'procesar';
+
+  function pintarBadgeHodos(origen, cantidad) {
+    var el = document.getElementById('badgeHodos' + origen);
+    if (!el) return;
+    var n = Number(cantidad) || 0;
+    el.textContent = n > 99 ? '99+' : String(n);
+    el.title = n + ' etiqueta(s) pendiente(s) de imprimir';
+    el.classList.toggle('vacio', n === 0);
+  }
+  function pintarBadgeHodosDeLista(origen, cantidad) {
+    badgeHodosDeListaSeq[origen] = ++secuenciaBadgesHodos;
+    pintarBadgeHodos(origen, cantidad);
+  }
+  function actualizarBadgesHodos() {
+    if (badgesHodosEnCurso) return;
+    badgesHodosEnCurso = true;
+    var inicio = ++secuenciaBadgesHodos;
+    google.script.run
+      .withSuccessHandler(function(cuentas){
+        badgesHodosEnCurso = false;
+        origenesHodos.forEach(function(o){
+          // Si la lista de ese origen se cargó mientras esta consulta estaba en
+          // vuelo, su dato es más reciente: no se pisa (si no, imprimir todo y
+          // ver reaparecer el número viejo parecería un fallo).
+          if ((badgeHodosDeListaSeq[o] || 0) > inicio) return;
+          pintarBadgeHodos(o, cuentas ? cuentas[o] : 0);
+        });
+      })
+      // Un fallo al contar nunca debe molestar: se queda lo que hubiera y se reintenta.
+      .withFailureHandler(function(){ badgesHodosEnCurso = false; })
+      .contarEtiquetasHodos();
+  }
+  // UN solo intervalo para toda la vida de la página (arranque idempotente);
+  // fuera de la pestaña Hodos o con la ventana oculta no consulta nada.
+  function arrancarRefrescoBadgesHodos() {
+    if (badgesHodosIntervalo) return;
+    badgesHodosIntervalo = setInterval(function(){
+      if (tabActual === 'hodos' && !document.hidden) actualizarBadgesHodos();
+    }, INTERVALO_BADGES_HODOS_MS);
+    window.addEventListener('focus', function(){ if (tabActual === 'hodos') actualizarBadgesHodos(); });
+  }
+
   function cargarEtiquetasHodos() {
+    var origen = origenHodosActual;
     document.getElementById('hodosLista').innerHTML = '<div class="reten-empty"><i class="fa-solid fa-spinner spin"></i> Cargando…</div>';
     document.getElementById('hodosAccionBar').classList.remove('open');
     document.getElementById('hodosSelAll').checked = false;
+    document.getElementById('btnImprimirHodos').disabled = true;
     google.script.run
       .withSuccessHandler(function(etiquetas){
-        etiquetasHodosActuales = etiquetas || [];
+        etiquetas = etiquetas || [];
+        pintarBadgeHodosDeLista(origen, etiquetas.length);
+        if (origen !== origenHodosActual) return;   // el usuario ya cambió de origen: esta respuesta es vieja
+        etiquetasHodosActuales = etiquetas;
         pintarEtiquetasHodos();
       })
       .withFailureHandler(function(e){ setStatus('⚠️ ' + e.message, 'err'); document.getElementById('hodosLista').innerHTML = '<div class="reten-empty">Error al cargar.</div>'; })
-      .listarEtiquetasHodos(origenHodosActual);
+      .listarEtiquetasHodos(origen);
   }
 
   function pintarEtiquetasHodos() {
     var cont = document.getElementById('hodosLista');
-    if (!etiquetasHodosActuales.length) {
+    var n = etiquetasHodosActuales.length;
+    document.getElementById('btnImprimirHodos').disabled = (n === 0);
+    document.getElementById('txtImprimirHodos').innerHTML =
+      (n ? 'Imprimir las ' + n + ' pendientes de ' + escH(origenHodosActual) : 'Imprimir pendientes') +
+      '<small>Al imprimir se marcan como impresas y salen de la lista</small>';
+    if (!n) {
       cont.innerHTML = '<div class="reten-empty">Sin etiquetas pendientes de ' + escH(origenHodosActual) + '.</div>';
       return;
     }
@@ -1168,17 +1238,50 @@
     actualizarBarraAccionesHodos();
   }
 
+  // Igual que HODOS: imprime TODAS las pendientes del origen y, una vez que la
+  // ventana de impresión tiene ya el contenido, las marca como impresas y
+  // recarga la lista — desaparecen solas (no hay que usar "Marcar TODAS").
+  // Solo se marca si la ventana se abrió: con el bloqueador de ventanas
+  // emergentes activo NO se marca nada (si no, saldrían de la lista sin
+  // haberse impreso).
+  var hodosImprimiendo = false;
   function imprimirEtiquetasHodos() {
+    if (hodosImprimiendo) return;                 // doble clic: no imprimir dos veces lo mismo
+    hodosImprimiendo = true;
+    var origen = origenHodosActual;
+    document.getElementById('btnImprimirHodos').disabled = true;
     setStatus('<i class="fa-solid fa-spinner spin"></i> Preparando impresión…', 'run');
     var w = window.open('', '_blank');
     google.script.run
       .withSuccessHandler(function(r){
-        if (!w) { setStatus('⚠️ Permite las ventanas emergentes para imprimir.', 'err'); return; }
+        if (!w) {
+          hodosImprimiendo = false;
+          document.getElementById('btnImprimirHodos').disabled = false;
+          setStatus('⚠️ Permite las ventanas emergentes para imprimir.', 'err');
+          return;
+        }
         w.document.open(); w.document.write(r.html); w.document.close();
-        setStatus('🖨️ Enviado a impresión.', 'ok');
+        google.script.run
+          .withSuccessHandler(function(m){
+            hodosImprimiendo = false;
+            setStatus('🖨️ ' + (m.cantidad || 0) + ' etiqueta(s) de ' + origen + ' enviada(s) a imprimir y marcada(s) como impresas.', 'ok');
+            cargarEtiquetasHodos();
+          })
+          .withFailureHandler(function(e){
+            hodosImprimiendo = false;
+            document.getElementById('btnImprimirHodos').disabled = false;
+            setStatus('⚠️ Se enviaron a imprimir, pero no se pudieron marcar como impresas (' + e.message + '). Usa "Marcar TODAS como impresas".', 'err');
+          })
+          .marcarImpresasEtiquetasHodos(origen);
       })
-      .withFailureHandler(function(e){ if (w) w.close(); setStatus('⚠️ ' + e.message, 'err'); })
-      .htmlImprimirEtiquetasHodos(origenHodosActual);
+      .withFailureHandler(function(e){
+        hodosImprimiendo = false;
+        document.getElementById('btnImprimirHodos').disabled = false;
+        if (w) w.close();
+        setStatus('⚠️ ' + e.message, 'err');
+        cargarEtiquetasHodos();   // p. ej. otra persona ya las imprimió: que la lista lo refleje
+      })
+      .htmlImprimirEtiquetasHodos(origen);
   }
 
   function marcarImpresasHodos() {

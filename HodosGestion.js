@@ -42,6 +42,18 @@ function listarEtiquetasHodos(origen) {
   return _hodosWebhookLlamar_('listarPendientesArrastre', { origen: origen }).etiquetas || [];
 }
 
+/**
+ * Cuántas etiquetas pendientes de imprimir tiene cada origen (insignias
+ * numéricas de las pestañas, igual que la barra lateral de HODOS). Una sola
+ * consulta ligera del lado de HODOS. Devuelve { Meco, Valencia, Torija, Antequera }.
+ */
+function contarEtiquetasHodos() {
+  const c = _hodosWebhookLlamar_('contarPendientesArrastre', {}).cuentas || {};
+  const salida = {};
+  HODOS_ORIGENES_ARRASTRE.forEach(o => { salida[o] = Number(c[o.toLowerCase()]) || 0; });
+  return salida;
+}
+
 /** HTML de impresión (etiquetas Zebra, ya montado por HODOS) de un origen. */
 function htmlImprimirEtiquetasHodos(origen) {
   return { html: _hodosWebhookLlamar_('htmlPendientesArrastre', { origen: origen }).html };
