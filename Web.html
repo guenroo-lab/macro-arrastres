@@ -1379,6 +1379,19 @@
       .listarEtiquetasHodos(origen);
   }
 
+  // "2026-10-05T14:51:27.365+00:00" (UTC, tal cual lo guarda HODOS) -> "05/10/2026 · 16:51" (hora de Málaga).
+  // Si no se puede interpretar, se deja el texto original en vez de romper la tarjeta.
+  function fmtFechaHodos(iso) {
+    try {
+      var d = new Date(iso);
+      if (isNaN(d.getTime())) return String(iso);
+      var p = {};
+      new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(d).forEach(function(x){ p[x.type] = x.value; });
+      return p.day + '/' + p.month + '/' + p.year + ' · ' + (p.hour === '24' ? '00' : p.hour) + ':' + p.minute;
+    } catch (e) { return String(iso); }
+  }
+
   function pintarEtiquetasHodos() {
     var cont = document.getElementById('hodosLista');
     var n = etiquetasHodosActuales.length;
@@ -1396,7 +1409,7 @@
         '<span>' +
           '<span class="ped">' + escH(e.numeroPedido || '—') + '</span><span class="chip-tipo">' + escH(e.destino || '') + '</span>' +
           (e.soporteTotal > 1 ? '<div class="meta">Soporte ' + escH(e.soporteNum) + ' de ' + escH(e.soporteTotal) + '</div>' : '') +
-          (e.fechaCreacion ? '<div class="dia"><i class="fa-solid fa-calendar-day"></i> ' + escH(e.fechaCreacion) + '</div>' : '') +
+          (e.fechaCreacion ? '<div class="dia"><i class="fa-solid fa-calendar-day"></i> ' + escH(fmtFechaHodos(e.fechaCreacion)) + '</div>' : '') +
         '</span></label>';
     }).join('');
   }
