@@ -186,8 +186,10 @@ function volcarAntequeraTOP(filas, mapaResumen) {
  *   K(10)=Pyxis · L(11)=Flujo · P(15) y Q(16)=Soporte (Q es el "SSCC" que se registra en
  *   RETENIDOS: aquí el soporte del Resumen, el que lleva la etiqueta del palé) ·
  *   S(18)=LM tal cual viene en el PDF (los códigos "48…" con sufijo los recorta el paso 0 de
- *   procesarArrastres; si se recortaran aquí se recortarían dos veces) · U(20)=Artículo ·
- *   W(22)=Unidades. La EAN (T) la rellena procesarArrastres.
+ *   procesarArrastres; si se recortaran aquí se recortarían dos veces) · T(19)=EAN13 del
+ *   Resumen (procesarArrastres solo lo completa desde la hoja EAN si falta) · U(20)=Artículo ·
+ *   V(21) y W(22)=Unidades ENVIADAS (las del Resumen) · I(8)=Proveedor (493 = stock propio de
+ *   Antequera; en tránsito, el de la columna ENTREGA del Detalle).
  */
 function volcarAntequeraLineasTOP(lineas) {
   if (!lineas || !lineas.length) throw new Error('No hay líneas que volcar. Sube los PDF y revisa la vista previa.');
@@ -200,9 +202,9 @@ function volcarAntequeraLineasTOP(lineas) {
   if (!wsTOP) throw new Error('No existe la hoja "' + CFG.HOJAS.TOP + '".');
 
   const cab = new Array(ANCHO).fill('');
-  cab[0] = 'Origen'; cab[1] = 'Exp'; cab[6] = 'Tienda'; cab[9] = 'Pedido'; cab[10] = 'Pyxis';
+  cab[0] = 'Origen'; cab[1] = 'Exp'; cab[6] = 'Tienda'; cab[8] = 'Proveedor'; cab[9] = 'Pedido'; cab[10] = 'Pyxis';
   cab[11] = 'Flujo'; cab[12] = 'Agrupación'; cab[15] = 'Soporte'; cab[16] = 'SSCC';
-  cab[18] = 'LM'; cab[19] = 'EAN'; cab[20] = 'Articulo'; cab[22] = 'Unidades';
+  cab[18] = 'LM'; cab[19] = 'EAN'; cab[20] = 'Articulo'; cab[21] = 'Unidades'; cab[22] = 'Unid';
 
   const matriz = [cab];
   let sinPedido = 0;
@@ -212,6 +214,7 @@ function volcarAntequeraLineasTOP(lineas) {
     fila[0]  = 'Antequera';
     fila[1]  = t_(l.exp);
     fila[6]  = t_(l.tienda);
+    fila[8]  = t_(l.proveedor);                    // I = Proveedor: 493 si es stock de Antequera; si no, el de tránsito
     fila[9]  = t_(l.pegase) || t_(l.pyxis) || 'SIN PEDIDO';
     fila[10] = t_(l.pyxis);
     fila[11] = t_(l.flujo) || 'CC';
@@ -219,8 +222,13 @@ function volcarAntequeraLineasTOP(lineas) {
     fila[15] = t_(l.soporte);
     fila[16] = t_(l.soporte);
     fila[18] = t_(l.lmRaw);
+    fila[19] = t_(l.ean);                          // T = EAN13 del Resumen (procesarArrastres solo lo completa si falta)
     fila[20] = t_(l.desc);
-    fila[22] = l.uds == null ? '' : t_(l.uds);
+    // Unidades ENVIADAS (las del Resumen): V = "Unidades" (la que se imprime en la hoja TOP, como en
+    // Valencia/Torija) y W = "Unid" (la que lee el Control de pedido). Para Antequera procesarArrastres
+    // NO las sustituye por la cantidad pedida de TOM.
+    fila[21] = l.uds == null ? '' : t_(l.uds);
+    fila[22] = fila[21];
     if (fila[10] === '') sinPedido++;
     palets[fila[15]] = true;
     matriz.push(fila);

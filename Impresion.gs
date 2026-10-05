@@ -125,7 +125,7 @@ function htmlImprimirPyxisArrastres() {
   const u = ultimaFilaCol_(wsTOP, 11); // K
   if (u < 2) return { error: 'La hoja TOP no tiene datos.' };
   const top = wsTOP.getRange(1, 1, u, 26).getDisplayValues();
-  const cG = 6, cK = 10, cS = 18, cT = 19, cU = 20, cW = 22, cZ = 25;
+  const cA = 0, cG = 6, cI = 8, cK = 10, cP = 15, cS = 18, cT = 19, cU = 20, cW = 22, cZ = 25;
 
   const pedidos = [], visto = {};
   for (let i = 1; i < u; i++) {
@@ -141,22 +141,51 @@ function htmlImprimirPyxisArrastres() {
     for (let i = 1; i < u; i++) {
       if (String(top[i][cK]) === String(pedido) && t_(top[i][cZ]) === 'VERDE') { tienda = top[i][cG]; break; }
     }
-    let filas = '', dictS = {};
+    // Antequera (2026-10-05): el control lleva además PALÉ (soporte, para localizarlo al descargar) y
+    // PROVEEDOR (493 = stock propio; en tránsito, el del Detalle), y las unidades de un mismo LM del
+    // pedido se SUMAN (el Resumen trae una línea por cada vez que aparece). Los demás orígenes salen
+    // exactamente como siempre (solo la primera fila de cada LM).
+    let esAnt = false;
+    for (let i = 1; i < u; i++) {
+      if (String(top[i][cK]) === String(pedido) && t_(top[i][cZ]) === 'VERDE') { esAnt = t_(top[i][cA]) === 'Antequera'; break; }
+    }
+    const grupos = [], dictS = {};
     for (let i = 1; i < u; i++) {
       if (String(top[i][cK]) === String(pedido) && t_(top[i][cZ]) === 'VERDE') {
         const s = String(top[i][cS]);
         if (!dictS[s]) {
-          dictS[s] = 1;
-          filas += '<tr><td>' + esc_(top[i][cG]) + '</td><td>' + esc_(top[i][cS]) + '</td><td>' +
-            esc_(top[i][cT]) + '</td><td>' + esc_(pedido) + '</td><td>' + esc_(top[i][cU]) +
-            '</td><td>' + esc_(top[i][cW]) + '</td><td></td></tr>';
+          dictS[s] = grupos.length + 1;
+          grupos.push({ i: i, uds: parseFloat(String(top[i][cW]).replace(',', '.')), sops: [t_(top[i][cP])], provs: [t_(top[i][cI])] });
+        } else if (esAnt) {
+          const g = grupos[dictS[s] - 1], n = parseFloat(String(top[i][cW]).replace(',', '.'));
+          if (!isNaN(n)) g.uds = (isNaN(g.uds) ? 0 : g.uds) + n;
+          if (g.sops.indexOf(t_(top[i][cP])) === -1) g.sops.push(t_(top[i][cP]));
+          if (t_(top[i][cI]) !== '' && g.provs.indexOf(t_(top[i][cI])) === -1) g.provs.push(t_(top[i][cI]));
         }
       }
     }
+    let filas = '';
+    grupos.forEach(g => {
+      const i = g.i;
+      if (!esAnt) {
+        filas += '<tr><td>' + esc_(top[i][cG]) + '</td><td>' + esc_(top[i][cS]) + '</td><td>' +
+          esc_(top[i][cT]) + '</td><td>' + esc_(pedido) + '</td><td>' + esc_(top[i][cU]) +
+          '</td><td>' + esc_(top[i][cW]) + '</td><td></td></tr>';
+      } else {
+        const uds = isNaN(g.uds) ? top[i][cW] : String(Math.round(g.uds * 100) / 100);
+        filas += '<tr><td>' + esc_(top[i][cG]) + '</td><td>' + esc_(g.sops.filter(x => x !== '').join(' / ')) + '</td><td>' +
+          esc_(g.provs.filter(x => x !== '').join(' / ')) + '</td><td>' + esc_(top[i][cS]) + '</td><td>' +
+          esc_(top[i][cT]) + '</td><td>' + esc_(pedido) + '</td><td>' + esc_(top[i][cU]) +
+          '</td><td>' + esc_(uds) + '</td><td></td></tr>';
+      }
+    });
+    const cabTabla = esAnt
+      ? '<th>TIENDA</th><th>PALÉ</th><th>PROVEEDOR</th><th>LM</th><th>EAN</th><th>PEDIDO</th><th>ARTÍCULO</th><th>Unidades</th><th>Check</th>'
+      : '<th>TIENDA</th><th>LM</th><th>EAN</th><th>PEDIDO</th><th>ARTÍCULO</th><th>Unidades</th><th>Check</th>';
     cuerpo += '<div' + (idx < pedidos.length - 1 ? ' class="pb"' : '') + '>' +
       '<h1>Control de pedido · Arrastres</h1>' +
       '<table class="info"><tr><th>Pedido</th><td>' + esc_(pedido) + '</td><th>Tienda</th><td>' + esc_(tienda) + '</td></tr></table>' +
-      '<table><thead><tr><th>TIENDA</th><th>LM</th><th>EAN</th><th>PEDIDO</th><th>ARTÍCULO</th><th>Unidades</th><th>Check</th></tr></thead><tbody>' +
+      '<table><thead><tr>' + cabTabla + '</tr></thead><tbody>' +
       filas + '</tbody></table></div>';
   });
   return { html: _docHTML_('Pyxis arrastres', cuerpo, true), n: pedidos.length };

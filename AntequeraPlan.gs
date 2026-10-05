@@ -30,6 +30,14 @@
  *  - Lo que no se pueda casar se marca REVISAR; nunca se descarta en silencio.
  */
 
+/** Proveedor de los palés de STOCK: el almacén de Antequera (493) es el origen, es stock propio. */
+const ANQ_PROVEEDOR_STOCK = '493';
+
+/** Nombre de proveedor del Detalle (columna ENTREGA, que el PDF corta: "ECOCERAMIC (" -> "ECOCERAMIC"). */
+function _anqProveedor_(v) {
+  return t_(v).replace(/\s*\($/, '').replace(/\s+/g, ' ');
+}
+
 /** Cantidad numérica tolerante ("18", "1.00", "1,5"). NaN -> 0. */
 function _anqNum_(v) {
   const n = parseFloat(String(v == null ? '' : v).replace(',', '.'));
@@ -110,9 +118,9 @@ function _anqAnalizar_(entrada, tomDatos) {
     const m = /^(\d{5,7})(?:\s|$)/.exec(t_(r.mensaje));
     lineas.push({
       soporte: sop, flujo: (t_(r.flujo) || 'CC').toUpperCase(), esStock: esStock,
-      lmRaw: lmRaw, lm: _anqLm_(lmRaw), uds: _anqNum_(r.unidades),
+      lmRaw: lmRaw, lm: _anqLm_(lmRaw), uds: _anqNum_(r.unidades), ean: t_(r.ean).replace(/\D/g, ''),
       pyxMensaje: m ? m[1] : '', exp: t_(r.exp).replace(/^0+/, ''), cliente: t_(r.cliente),
-      pyxis: '', pegase: '', como: '', desc: '', aviso: ''
+      pyxis: '', pegase: '', como: '', desc: '', aviso: '', proveedor: ''
     });
   });
   Object.keys(omitidos).forEach(s => avisos.push('Palé ' + s + ' marcado "Ya entregado" en el Detalle: se omite.'));
@@ -176,6 +184,24 @@ function _anqAnalizar_(entrada, tomDatos) {
     }
   });
 
+  // ---- Proveedor de cada línea ----
+  // STOCK (preparado en Antequera): el proveedor es el propio almacén, 493.
+  // TRÁNSITO: el proveedor es el de la columna ENTREGA del Detalle, localizado por el Pegase del
+  // pedido (el de TOM); si la línea no lo tiene, el de otra línea del mismo palé; si no hay, vacío.
+  lineas.forEach(l => {
+    if (l.esStock) { l.proveedor = ANQ_PROVEEDOR_STOCK; return; }
+    const d = (porPegase[l.pegase] || []).filter(x => x.entrega)[0];
+    if (d) l.proveedor = _anqProveedor_(d.entrega);
+  });
+  const provDePalet = {};
+  lineas.forEach(l => { if (l.proveedor && !provDePalet[l.soporte]) provDePalet[l.soporte] = l.proveedor; });
+  lineas.forEach(l => {
+    if (l.proveedor) return;
+    if (provDePalet[l.soporte]) { l.proveedor = provDePalet[l.soporte]; return; }
+    const dc = porContenido[l.soporte];
+    if (dc && dc.entrega) l.proveedor = _anqProveedor_(dc.entrega);
+  });
+
   // ---- Agrupar por palé y decidir ----
   const bultosPorSop = {};
   if (bultos && bultos.soportes) bultos.soportes.forEach(b => { bultosPorSop[t_(b.soporte)] = b; });
@@ -214,13 +240,12 @@ function _anqAnalizar_(entrada, tomDatos) {
     p.textoEtiqueta = etiqueta.join('+');
     p.revisar = p.sinResolver.length > 0;
     p.accion = !p.pyx.length ? 'REVISAR' : (retener.length && etiqueta.length ? 'MIXTO' : (retener.length ? 'RETENER' : 'ETIQUETA'));
-    // Detalle: proveedor y contenidos (solo informativo)
+    // Detalle: contenidos (solo informativo) y proveedor(es) del palé
     const pegs = _anqUniq_(p.lineas.map(l => l.pegase));
     const conts = [];
-    let prov = '';
-    pegs.forEach(g => (porPegase[g] || []).forEach(d => { if (conts.indexOf(d.contenido) === -1) conts.push(d.contenido); if (!prov && d.entrega) prov = d.entrega; }));
-    if (porContenido[p.soporte]) { prov = prov || porContenido[p.soporte].entrega; if (conts.indexOf(p.soporte) === -1) conts.push(p.soporte); }
-    p.contenidosDetalle = conts; p.proveedor = prov;
+    pegs.forEach(g => (porPegase[g] || []).forEach(d => { if (conts.indexOf(d.contenido) === -1) conts.push(d.contenido); }));
+    if (porContenido[p.soporte] && conts.indexOf(p.soporte) === -1) conts.push(p.soporte);
+    p.contenidosDetalle = conts; p.proveedor = _anqUniq_(p.lineas.map(l => l.proveedor)).join(' / ');
     if (p.accion === 'RETENER') { resumenFinal.retener++; resumenFinal.pedidosRetener += retener.length; }
     else if (p.accion === 'ETIQUETA') resumenFinal.etiqueta++;
     else if (p.accion === 'MIXTO') { resumenFinal.mixtos++; resumenFinal.pedidosRetener += retener.length; }
@@ -259,7 +284,7 @@ function _anqAnalizar_(entrada, tomDatos) {
   const top = lineas.map(l => ({
     origen: 'Antequera', exp: exp, tienda: tienda,
     pegase: l.pegase, pyxis: l.pyxis, flujo: l.flujo, soporte: l.soporte,
-    lmRaw: l.lmRaw, uds: l.uds, desc: l.desc
+    lmRaw: l.lmRaw, uds: l.uds, ean: l.ean, proveedor: l.proveedor, desc: l.desc
   }));
 
   return {
@@ -267,7 +292,7 @@ function _anqAnalizar_(entrada, tomDatos) {
       remolque: bultos.remolque || '', precinto: bultos.precinto || '', peso: bultos.peso || '' } : null,
     cuadre: cuadre, avisos: avisos, resumen: resumenFinal, palets: palets.map(p => ({
       soporte: p.soporte, flujoDoc: p.flujoDoc, tipo: p.tipo, seccion: p.seccion, proveedor: p.proveedor || '', contenidosDetalle: p.contenidosDetalle,
-      lineas: p.lineas.map(l => ({ lm: l.lm, uds: l.uds, pyxis: l.pyxis, como: l.como })),
+      lineas: p.lineas.map(l => ({ lm: l.lm, uds: l.uds, ean: l.ean, proveedor: l.proveedor, pyxis: l.pyxis, como: l.como })),
       pedidos: p.pedidos, accion: p.accion, retener: p.retener, etiqueta: p.etiqueta, textoEtiqueta: p.textoEtiqueta,
       revisar: p.revisar, avisos: p.avisos
     })), top: top

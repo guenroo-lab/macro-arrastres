@@ -1100,8 +1100,9 @@
       r.palets.forEach(function(p){
         // Un palé con líneas sin pedido va SIEMPRE en rojo (aunque lo resuelto ya tenga decisión).
         var cls = p.revisar ? 'revisar' : (p.accion==='RETENER' ? 'retener' : (p.accion==='MIXTO' ? 'mixto' : (p.accion==='ETIQUETA' ? 'etiqueta' : 'revisar')));
-        var lleva = p.lineas.slice(0,3).map(function(l){ return escH(l.lm) + ' ×' + l.uds; }).join('<br>') + (p.lineas.length > 3 ? '<br>+' + (p.lineas.length-3) + ' más' : '');
-        var pal = escH(p.flujoDoc) + (p.tipo ? ' · ' + (p.tipo==='C' ? 'bulto' : 'palé') : '') + (p.seccion ? ' · sec ' + escH(p.seccion) : '') + (p.proveedor ? '<br><small>' + escH(p.proveedor) + '</small>' : '');
+        var lleva = p.lineas.slice(0,3).map(function(l){ return escH(l.lm) + ' ×' + l.uds + (l.ean ? ' <small>' + escH(l.ean) + '</small>' : ''); }).join('<br>') + (p.lineas.length > 3 ? '<br>+' + (p.lineas.length-3) + ' más' : '');
+        var prov = p.proveedor ? p.proveedor.split(' / ').map(function(x){ return x==='493' ? '493 · stock propio' : x; }).join(' / ') : '';
+        var pal = escH(p.flujoDoc) + (p.tipo ? ' · ' + (p.tipo==='C' ? 'bulto' : 'palé') : '') + (p.seccion ? ' · sec ' + escH(p.seccion) : '') + (prov ? '<br><small>' + escH(prov) + '</small>' : '');
         var pedidos = p.pedidos.map(chipPedido).join(' ') || '<span class="ant-chip dudoso">sin pedido</span>';
         var que = '';
         if (p.retener.length) que += '<div><b>Retener</b> ' + escH(p.retener.join(' + ')) + '</div>';

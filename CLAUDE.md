@@ -239,6 +239,14 @@ vuelca a TOP (`volcarAntequeraLineasTOP`) y llama a `procesarArrastresWeb`.
 - **TOP**: una fila por línea del Resumen; J (Pedido) = Pegase o, si no se conoce, Pyxis (J no puede ir
   vacía: `ultimaFilaCol_` la usa para saber dónde acaba TOP); S = LM tal cual del PDF (los "48…" con sufijo
   los recorta el paso 0, NO recortar antes); Q = soporte.
+- **Unidades, EAN y proveedor (2026-10-05, Pedro)**: en TOP las cabeceras son V(21)="Unidades" (la que imprime
+  la hoja TOP, A..V) y W(22)="Unid" (la que lee el Control de pedido). Antequera pone en AMBAS las unidades
+  ENVIADAS del Resumen (no la cantidad pedida de TOM) y la EAN13 del Resumen en T (la hoja EAN solo la completa
+  si el Resumen no la trae, p. ej. códigos "48…"); `procesarArrastres` no las pisa para origen Antequera. I(8)=
+  Proveedor: **493 en STOCK** (stock propio de Antequera); en TRÁNSITO el de la columna ENTREGA del Detalle
+  (limpio: "ECOCERAMIC (" -> "ECOCERAMIC"), por el Pegase de la línea. La columna I se oculta salvo si hay
+  Antequera. El Control de pedido (`htmlImprimirPyxisArrastres`) de Antequera añade PALÉ y PROVEEDOR y SUMA las
+  unidades de un mismo LM; el resto de orígenes sale idéntico (prueba de regresión).
 - Antequera NO sirve a Granada. El diálogo antiguo del menú (`AntequeraForm.html` + `volcarAntequeraTOP`)
   sigue vivo pero pierde los palés sin Pegase y ahora avisa: usar el Panel Arrastres.
 - Pruebas (fuera del repo, `Proyectos\_scratch\`): `test_antequera_v2.js` (análisis), `test_antequera_e2e.js`

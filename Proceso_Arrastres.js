@@ -135,7 +135,9 @@ function _procesarArrastresNucleoCalculo_() {
     if (esVerde) {
       estado[i] = 'VERDE';
       if (vK === '' && (llave in dictTOM)) top[i][cK] = tom[dictTOM[llave]][iTOM.pyxis];  // K <- TOM Pyxis
-      if (t_(top[i][cT]) !== '') top[i][cS] = top[i][cT];                            // T sobreescribe S
+      // T sobreescribe S (en Valencia/Torija T trae el LM real). En Antequera T es la EAN13 del
+      // Resumen y S ya es el LM: no se toca.
+      if (t_(top[i][cT]) !== '' && t_(top[i][cA]) !== 'Antequera') top[i][cS] = top[i][cT];
     }
   }
 
@@ -155,6 +157,13 @@ function _procesarArrastresNucleoCalculo_() {
 
   // --- 5. Cruces EAN->T y validación->W ---
   for (let i = 1; i < uTOP; i++) {
+    // Antequera (2026-10-05): EAN y unidades vienen del RESUMEN (lo que viaja en el palé), en todas
+    // las líneas (retenidas o con etiqueta). La hoja EAN solo completa la EAN si el Resumen no la
+    // trae (p. ej. los códigos "48…"); las unidades NO se sustituyen por la cantidad pedida de TOM.
+    if (t_(top[i][cA]) === 'Antequera') {
+      if (t_(top[i][cT]) === '') { const vS = t_(top[i][cS]); if (vS in dictEAN) top[i][cT] = dictEAN[vS]; }
+      continue;
+    }
     if (estado[i] === 'VERDE') {
       const vS = t_(top[i][cS]), vK = t_(top[i][cK]);
       if (vS in dictEAN) top[i][cT] = dictEAN[vS];
@@ -285,7 +294,9 @@ function _procesarArrastresNucleoCalculo_() {
   // sí necesita ver (visto en real, 2026-09-10).
   wsTOP.showColumns(1, wsTOP.getMaxColumns());
   wsTOP.hideColumns(3, 3);  // C:E
-  wsTOP.hideColumns(9);     // I
+  // I (Proveedor) se oculta salvo en Antequera: ahí lleva el proveedor (493 = stock propio; en
+  // tránsito, el de la columna ENTREGA del Detalle) y se imprime con la hoja TOP.
+  if (!filasFinal.some((f, i) => i > 0 && t_(f[cA]) === 'Antequera')) wsTOP.hideColumns(9);   // I
   wsTOP.hideColumns(15);    // O
   wsTOP.hideColumns(26);    // Z
   _marca('escritura TOP (valores + colores + bordes + formatos)');
