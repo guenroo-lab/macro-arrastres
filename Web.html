@@ -344,6 +344,8 @@
   .ant-kpi.ret { background: var(--color-success-bg); border-color: var(--color-success-border); }
   .ant-kpi.eti { background: var(--color-info-bg); border-color: var(--color-info-border); }
   .ant-kpi.mix { background: color-mix(in srgb, var(--color-warn) 16%, var(--color-bg)); border-color: color-mix(in srgb, var(--color-warn) 45%, var(--color-bg)); }
+  .ant-kpi.div { background: color-mix(in srgb, var(--color-warn) 22%, var(--color-bg)); border-color: color-mix(in srgb, var(--color-warn) 60%, var(--color-bg)); }
+  .ant-div { padding: 3px 8px; border-radius: 7px; background: color-mix(in srgb, var(--color-warn) 18%, var(--color-bg)); border: 1px solid color-mix(in srgb, var(--color-warn) 50%, var(--color-bg)); }
   .ant-kpi.rev { background: var(--color-accent-bg); border-color: var(--color-accent-border); }
   .ant-kpi.rev b { color: var(--color-danger); }
   .ant-cuadre { font-size: 12.5px; padding: 7px 11px; border-radius: 9px; margin-bottom: 8px; border: 1px solid var(--color-border); }
@@ -1253,6 +1255,7 @@
         '<div class="ant-kpi eti"><b>' + r.resumen.etiqueta + '</b><span>etiqueta</span></div>' +
         (r.resumen.mixtos ? '<div class="ant-kpi mix"><b>' + r.resumen.mixtos + '</b><span>mixtos</span></div>' : '') +
         (r.resumen.sobrantes ? '<div class="ant-kpi sob"><b>' + r.resumen.sobrantes + '</b><span>sobrantes · ' + r.resumen.udsSobrantes + ' uds</span></div>' : '') +
+        (r.resumen.dividir ? '<div class="ant-kpi div"><b>' + r.resumen.dividir + '</b><span>a dividir por pedido</span></div>' : '') +
         '<div class="ant-kpi ' + (r.resumen.revisar ? 'rev' : '') + '"><b>' + r.resumen.revisar + '</b><span>revisar</span></div></div>';
       if (r.resumen.sobrantes) {
         h += '<label class="ant-opt"><input type="checkbox" id="antSobrantes" checked> Crear etiqueta HODOS de los <b>' + r.resumen.sobrantes + ' sobrante(s)</b> (' + r.resumen.udsSobrantes + ' uds que trae el palé de más y no corresponden a ningún pedido)</label>';
@@ -1283,9 +1286,13 @@
         var pedidos = p.pedidos.map(chipPedido).join(' ') || '<span class="ant-chip dudoso">sin pedido</span>';
         var que = '';
         if (p.retener.length) que += '<div><b>Retener</b> ' + escH(p.retener.join(' + ')) + '</div>';
-        if (p.etiqueta.length) que += '<div><b>Etiqueta' + (p.etiqueta.length > 1 ? ' (agrupación)' : '') + '</b> ' + escH(p.textoEtiqueta) + '</div>';
+        // Cerámica en Málaga: un soporte por pedido -> hay que dividir el palé y cada pedido lleva su etiqueta (nunca agrupación).
+        if (p.dividir) que += '<div class="ant-div"><b>Dividir en ' + p.pedidos.length + ' soportes</b> · cerámica Málaga: un soporte por pedido</div>';
+        if (p.etiqueta.length && p.dividir) que += '<div><b>Etiqueta por pedido</b> ' + escH(p.etiqueta.join(' · ')) + '</div>';
+        else if (p.etiqueta.length) que += '<div><b>Etiqueta' + (p.etiqueta.length > 1 ? ' (agrupación)' : '') + '</b> ' + escH(p.textoEtiqueta) + '</div>';
         if (!que) que = '<div><b>REVISAR</b></div>';
-        if (p.avisos.length) que += '<div class="ant-aviso-fila">' + p.avisos.map(escH).join('<br>') + '</div>';
+        var avisosFila = p.avisos.filter(function(a){ return !/^CERÁMICA MÁLAGA/.test(a); });   // ese ya lo dice el recuadro "Dividir en N soportes"
+        if (avisosFila.length) que += '<div class="ant-aviso-fila">' + avisosFila.map(escH).join('<br>') + '</div>';
         h += '<tr class="ant-r-' + cls + '"><td><b>' + escH(p.soporte) + '</b><br>' + pal + '</td><td>' + lleva + '</td><td>' + pedidos + '</td><td class="ant-que">' + que + '</td></tr>';
       });
       h += '</tbody></table></div>';

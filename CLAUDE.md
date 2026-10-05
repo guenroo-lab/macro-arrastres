@@ -253,8 +253,21 @@ vuelca a TOP (`volcarAntequeraLineasTOP`) y llama a `procesarArrastresWeb`.
   `SOBRANTE+3 UDS+LM 95237762+PED 986016` (`_generarHodos_` regla 7; se crea aunque el pedido se retenga). Si trae
   menos solo se avisa (puede ser entrega parcial). La vista previa tiene una casilla «Crear etiqueta de sobrante»
   (desmarcada = no se crean). Ojo: si TOM y Resumen usan unidades distintas (p. ej. packs de 100 UD) saldrá un
-  sobrante falso — se ve en la vista previa antes de procesar. Cabeceras V/W/X = Trae/Pide/Dif y la hoja TOP
-  impresa llega hasta X en Antequera.
+  sobrante falso — se ve en la vista previa antes de procesar. Cabeceras V/W/X = Trae/Pide/Dif. **La columna Dif
+  (X) NO se imprime y se oculta en la hoja** (Pedro: no la quiere), pero se conserva con sus datos porque
+  `_generarHodos_` la lee para la etiqueta de sobrante. La impresión de Antequera llega hasta W (Trae · Pide) y
+  salta las columnas vacías. OJO: hay DOS impresiones de la hoja TOP, `htmlImprimirTOP` (botón) e
+  `_htmlImpresionArrastres_` (la automática al terminar de procesar, con carátula); las dos usan
+  `_limiteImpresionTOP_()` (Antequera 23, resto 22) y `_ocultarColumnasVacias_`. En Antequera también se
+  ocultan en la hoja las columnas vacías (H, Agrupación, SSCC Agrupación, Tipo Soporte).
+- **CERÁMICA EN MÁLAGA = UN SOPORTE POR PEDIDO (2026-10-05, Pedro)**: solo en la tienda **Málaga**, nunca puede haber
+  una agrupación de cerámica con pedidos distintos. Un palé de Málaga que lleve cerámica (algún LM en la hoja
+  CERAMICA; `_catalogoCeramica_`, en caché 6 h; sin catálogo se asume que TODO es cerámica y se avisa) y MÁS DE UN
+  pedido (retenidos o no) se marca `dividir` en el análisis (aviso + recuadro «Dividir en N soportes» en la vista
+  previa + KPI «a dividir por pedido») y sus etiquetas HODOS son UNA POR PEDIDO no retenido (`295838`, `295839`),
+  nunca `295838+295839` (`_generarHodos_` regla 7, mapa `antMalaga`; el resumen de procesar cuenta
+  `antDivididos`). Los palés de Málaga SIN cerámica siguen como agrupación; Marbella y Mijas no cambian. Es el mismo
+  criterio que ya usaba la regla 5 de Málaga para cerámica no-Antequera (pedidos separados, una línea cada uno).
 - **Columna Tienda**: F(5) = "036 Málaga" / "014 Marbella" / "279 Mijas" (número + nombre); G(6) "Nombre" se queda con el
   nombre solo (la lógica lo usa) pero se OCULTA en Antequera.
 - **Hodos (pestaña)**: listado premium agrupado por tienda + expedición (HODOS devuelve `expedicion` desde v92),

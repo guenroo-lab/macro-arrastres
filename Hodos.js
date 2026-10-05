@@ -38,6 +38,10 @@
  *      Las líneas VERDE/MORADO (retenidas) no entran. Además, cada SOBRANTE (el palé trae más
  *      unidades de las que pide el pedido, col X > 0) lleva su propia etiqueta
  *      "SOBRANTE + N UDS + LM + PED". Ver AntequeraPlan.gs.
+ *      EXCEPCIÓN MÁLAGA + CERÁMICA (Pedro, 2026-10-05): la cerámica de Málaga va siempre en soportes por
+ *      pedido, nunca en agrupación. Si un palé de Málaga lleva cerámica (LM en CERAMICA; sin catálogo se asume
+ *      que sí) y más de un pedido, NO sale "ped+ped": sale UNA etiqueta por pedido no retenido (el palé se
+ *      divide físicamente en un soporte por pedido). Marbella y Mijas siguen con agrupación.
  *
  * Además se vuelcan los pedidos de TRAMECO (lo que antes iba a FLUJOSTRA con
  * la "M" delante): ahora van a HODOS con el número limpio, sin prefijo.
@@ -207,8 +211,9 @@ function _generarHodos_(filasFinal, tom, uTOM, iTOM, cA, cB, cG, cJ, cK, cL, cP,
   const TIENDAS = { 'MALAGA': 'Málaga', 'MARBELLA': 'Marbella', 'MIJAS': 'Mijas' };
   const antPorTienda = {};  // Antequera: una etiqueta por palé, independiente del resto de reglas
   const antSobrantes = {};  // Antequera: una etiqueta por cada SOBRANTE (trae más de lo que pide el pedido)
+  const antMalaga = {};     // Antequera/Málaga: por palé, todos sus pedidos y si lleva cerámica (=> un soporte por pedido)
   let sinCatalogo = (ceramica === null);
-  let nCeramica = 0, nSinTransporte = 0, nCC2 = 0, nLS = 0, nAntequera = 0, nSobrantes = 0;
+  let nCeramica = 0, nSinTransporte = 0, nCC2 = 0, nLS = 0, nAntequera = 0, nSobrantes = 0, nAntDivididos = 0;
 
   const _grupo_ = (tienda, soporte, modo, origen, expedicion) => {
     if (!porTienda[tienda]) porTienda[tienda] = { soportes: {}, orden: [], sueltos: {}, ordenSueltos: [], origenSueltos: {}, expSueltos: {} };
@@ -244,9 +249,19 @@ function _generarHodos_(filasFinal, tom, uTOM, iTOM, cA, cB, cG, cJ, cK, cL, cP,
         antSobrantes[tienda].push({ texto: ['SOBRANTE', (Math.round(difA * 100) / 100) + ' UDS', 'LM ' + t_(fila[cS]), 'PED ' + t_(fila[cK])].join('+'), expedicion: expedicionFila });
         nSobrantes++;
       }
+      const pyxA = t_(fila[cK]), sopA = t_(fila[cP]);
+      // MÁLAGA + CERÁMICA (2026-10-05, Pedro): la cerámica de Málaga va SIEMPRE en soportes por pedido; nunca una
+      // agrupación de cerámica con pedidos distintos. Se anota, por palé, todos sus pedidos (retenidos o no) y si
+      // lleva cerámica (LM en el catálogo CERAMICA; sin catálogo se asume que sí, para no romper la regla).
+      if (tienda === 'Málaga' && pyxA !== '' && sopA !== '') {
+        const lmA = _lmDeFila_(fila, cS, cT);
+        const esCerA = ceramica ? (lmA !== '' && (lmA in ceramica)) : true;
+        const IM = antMalaga[sopA] || (antMalaga[sopA] = { pedidos: [], ceramica: false });
+        if (IM.pedidos.indexOf(pyxA) === -1) IM.pedidos.push(pyxA);
+        if (esCerA) IM.ceramica = true;
+      }
       const estA = t_(fila[25]);                                   // col Z: 'VERDE' | 'MORADO' | ''
       if (estA === 'VERDE' || estA === 'MORADO') continue;          // retenido: ya tiene traza por RETENIDOS
-      const pyxA = t_(fila[cK]), sopA = t_(fila[cP]);
       if (pyxA === '' || sopA === '') continue;                      // sin pedido resuelto: el volcado ya avisó (REVISAR)
       nAntequera++;
       if (!antPorTienda[tienda]) antPorTienda[tienda] = { soportes: {}, orden: [] };
@@ -379,6 +394,17 @@ function _generarHodos_(filasFinal, tom, uTOM, iTOM, cA, cB, cG, cJ, cK, cL, cP,
     if (A) {
       A.orden.forEach(sop => {
         const S = A.soportes[sop];
+        // Málaga + cerámica + más de un pedido en el palé: se divide en un soporte por pedido -> UNA etiqueta por pedido
+        // (nunca "ped+ped"). Si el palé es mixto (alguno retenido), aquí solo quedan los no retenidos.
+        const IM = (tienda === 'Málaga') ? antMalaga[sop] : null;
+        if (IM && IM.ceramica && IM.pedidos.length > 1) {
+          nAntDivididos++;
+          S.pedidos.forEach(p => {
+            salida.push([tienda, p]);
+            lineas.push({ tienda: tienda, texto: p, origen: 'Antequera', expedicion: S.expedicion });
+          });
+          return;
+        }
         const texto = S.pedidos.join('+');
         salida.push([tienda, texto]);
         lineas.push({ tienda: tienda, texto: texto, origen: 'Antequera', expedicion: S.expedicion });
@@ -420,6 +446,7 @@ function _generarHodos_(filasFinal, tom, uTOM, iTOM, cA, cB, cG, cJ, cK, cL, cP,
     cc2: nCC2,
     ls: nLS,
     antequera: nAntequera,
+    antDivididos: nAntDivididos,
     sobrantes: nSobrantes,
     trameco: tra.length,
     sinCatalogo: sinCatalogo,

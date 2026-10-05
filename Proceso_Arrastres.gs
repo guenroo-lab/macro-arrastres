@@ -371,7 +371,7 @@ function _procesarArrastresNucleoCalculo_() {
     (nSoportesBloqueados ? ' (' + nSoportesBloqueados + ' soportes LS con >2 artículos, no retenidos)' : '') +
     ' · ' + res.total + ' nuevos → ' + det +
     ' · HODOS: ' + hodos.filas + ' líneas (' + hodos.sinTransporte + ' cerámica sin transporte, ' +
-    hodos.cc2 + ' CC2, ' + hodos.ls + ' LS, ' + (hodos.antequera ? hodos.antequera + ' Antequera, ' : '') + (hodos.sobrantes ? hodos.sobrantes + ' sobrante(s), ' : '') + hodos.trameco + ' de TRAMECO)';
+    hodos.cc2 + ' CC2, ' + hodos.ls + ' LS, ' + (hodos.antequera ? hodos.antequera + ' Antequera, ' : '') + (hodos.antDivididos ? hodos.antDivididos + ' palé(s) de cerámica Málaga divididos por pedido, ' : '') + (hodos.sobrantes ? hodos.sobrantes + ' sobrante(s), ' : '') + hodos.trameco + ' de TRAMECO)';
   if (hodos.sinCatalogo) {
     msg = '⚠️ Falta la hoja CERAMICA (catálogo de LM): HODOS solo trae los de TRAMECO. · ' + msg;
   }

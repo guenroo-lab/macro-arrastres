@@ -69,14 +69,26 @@ function _anqCodigoTienda_(c) {
 function analizarAntequera(entrada) {
   const tomDatos = _leerTOMDesdeDrive_();
   if (tomDatos.error) return { error: tomDatos.error };
-  return _anqAnalizar_(entrada, tomDatos);
+  // Málaga: la cerámica va en soportes por pedido (ver _anqAnalizar_). Se necesita el catálogo CERAMICA (en caché 6 h).
+  let ceramica = null;
+  if (t_((entrada || {}).tienda) === 'Málaga') {
+    try { ceramica = _catalogoCeramica_(); } catch (e) { ceramica = null; }
+  }
+  return _anqAnalizar_(entrada, tomDatos, ceramica);
 }
 
 /**
  * Análisis puro (sin Sheets ni Drive): se prueba en Node con TOM real.
  * tomDatos = { filas, iTOM } (filas[0] = cabecera). iTOM.tienda es opcional.
+ * ceramica = catálogo de LM de cerámica { lm: true } (solo cuenta en Málaga) o null si no se pudo leer:
+ * entonces se asume que TODO es cerámica (la regla de Málaga manda) y se avisa.
+ *
+ * REGLA MÁLAGA (Pedro, 2026-10-05): la cerámica de Málaga va SIEMPRE en soportes por pedido; nunca una
+ * agrupación de cerámica con pedidos distintos. Un palé de Málaga con cerámica y más de un pedido queda marcado
+ * `dividir` (hay que separarlo en un soporte por pedido) y sus etiquetas HODOS son UNA POR PEDIDO, no "ped+ped"
+ * (Hodos.gs lo hace igual al generar las etiquetas). Marbella y Mijas no cambian.
  */
-function _anqAnalizar_(entrada, tomDatos) {
+function _anqAnalizar_(entrada, tomDatos, ceramica) {
   const E = entrada || {};
   const tienda = t_(E.tienda);
   if (['Málaga', 'Marbella', 'Mijas'].indexOf(tienda) === -1) {
@@ -255,7 +267,9 @@ function _anqAnalizar_(entrada, tomDatos) {
     if (l.falta) p.avisos.push('Faltan ' + l.falta + ' uds de LM ' + l.lm + ' del pedido ' + l.pyxis + ' (trae ' + l.traeTotal + ', pide ' + l.pide + '; puede ser entrega parcial)');
   });
 
-  const resumenFinal = { palets: palets.length, retener: 0, etiqueta: 0, mixtos: 0, revisar: 0, pedidosRetener: 0,
+  const esMalaga = tienda === 'Málaga';
+  if (esMalaga && !ceramica) avisos.push('Sin catálogo de cerámica (hoja CERAMICA): en Málaga se asume que TODO es cerámica y todo palé con varios pedidos se divide por pedido.');
+  const resumenFinal = { palets: palets.length, retener: 0, etiqueta: 0, mixtos: 0, revisar: 0, pedidosRetener: 0, dividir: 0,
     sobrantes: lineas.filter(l => l.sobra).length, udsSobrantes: r2(lineas.reduce((a, l) => a + (l.sobra || 0), 0)), faltas: lineas.filter(l => l.falta).length };
   palets.forEach(p => {
     const retener = [], etiqueta = [];
@@ -271,6 +285,13 @@ function _anqAnalizar_(entrada, tomDatos) {
     p.pedidos = p.pedidos || [];
     p.retener = retener; p.etiqueta = etiqueta;
     p.textoEtiqueta = etiqueta.join('+');
+    // Málaga + cerámica + varios pedidos: un soporte por pedido (no hay agrupación de cerámica en Málaga)
+    p.dividir = esMalaga && p.pyx.length > 1 && (!ceramica || p.lineas.some(l => String(l.lm) in ceramica));
+    if (p.dividir) {
+      resumenFinal.dividir++;
+      p.avisos.push('CERÁMICA MÁLAGA · un soporte por pedido: dividir este palé en ' + p.pyx.length + ' soportes (' + p.pyx.join(' · ') + ')' +
+        (etiqueta.length ? '; etiqueta HODOS individual para ' + etiqueta.join(' · ') : '') + (retener.length ? '; ' + retener.join(' · ') + ' se retiene' : ''));
+    }
     p.revisar = p.sinResolver.length > 0;
     p.accion = !p.pyx.length ? 'REVISAR' : (retener.length && etiqueta.length ? 'MIXTO' : (retener.length ? 'RETENER' : 'ETIQUETA'));
     // Detalle: contenidos (solo informativo) y proveedor(es) del palé
@@ -328,7 +349,7 @@ function _anqAnalizar_(entrada, tomDatos) {
     cuadre: cuadre, avisos: avisos, resumen: resumenFinal, palets: palets.map(p => ({
       soporte: p.soporte, flujoDoc: p.flujoDoc, tipo: p.tipo, seccion: p.seccion, proveedor: p.proveedor || '', contenidosDetalle: p.contenidosDetalle,
       lineas: p.lineas.map(l => ({ lm: l.lm, uds: l.uds, ean: l.ean, proveedor: l.proveedor, pyxis: l.pyxis, como: l.como, pide: l.pide, sobra: l.sobra, falta: l.falta, traeTotal: l.traeTotal })),
-      pedidos: p.pedidos, accion: p.accion, retener: p.retener, etiqueta: p.etiqueta, textoEtiqueta: p.textoEtiqueta,
+      pedidos: p.pedidos, accion: p.accion, retener: p.retener, etiqueta: p.etiqueta, textoEtiqueta: p.textoEtiqueta, dividir: !!p.dividir,
       revisar: p.revisar, avisos: p.avisos
     })), top: top
   };
