@@ -23,6 +23,24 @@ function _docHTML_(titulo, cuerpo, landscape) {
     '</body></html>';
 }
 
+/**
+ * Antequera imprime la hoja TOP hasta la X (Trae · Pide · Dif); el resto de orígenes, hasta la V como siempre.
+ * Lo usan TODAS las impresiones de la hoja TOP (htmlImprimirTOP y la automática de procesarArrastres).
+ */
+function _limiteImpresionTOP_() {
+  const o = _datosCaratula_() || {};
+  return t_(o.origen) === 'Antequera' ? 24 : 22;
+}
+
+/** Antequera: marca como ocultas (1-based) las columnas que están vacías en todas las líneas. */
+function _ocultarColumnasVacias_(vals, ocultas, lastCol) {
+  for (let c = 0; c < lastCol; c++) {
+    let vacia = true;
+    for (let r = 1; r < vals.length; r++) { if (t_(vals[r][c]) !== '') { vacia = false; break; } }
+    if (vacia) ocultas[c + 1] = true;
+  }
+}
+
 /* ---------- Hoja TOP (horizontal, hasta col V, márgenes mínimos) ---------- */
 function htmlImprimirTOP() {
   const ss = SpreadsheetApp.getActive();
@@ -33,9 +51,8 @@ function htmlImprimirTOP() {
   const u = ws ? ws.getLastRow() : 0;
   if (u < 1) return { error: 'La hoja TOP no tiene datos.' };
 
-  // Antequera imprime hasta la X (Trae · Pide · Dif); el resto de orígenes, hasta la V como siempre.
   const infoOrigen = _datosCaratula_() || {};
-  const LIMITE = t_(infoOrigen.origen) === 'Antequera' ? 24 : 22;
+  const LIMITE = _limiteImpresionTOP_();
   const lastCol = Math.min(ws.getLastColumn(), LIMITE);
   const rng = ws.getRange(1, 1, u, lastCol);
   const vals = rng.getDisplayValues();
@@ -44,13 +61,7 @@ function htmlImprimirTOP() {
   const ocultas = [];
   for (let c = 1; c <= lastCol; c++) ocultas[c] = ws.isColumnHiddenByUser(c);
   // Antequera: tampoco se imprime ninguna columna que esté vacía en todas las líneas (más sitio para Trae · Pide · Dif).
-  if (LIMITE === 24) {
-    for (let c = 0; c < lastCol; c++) {
-      let vacia = true;
-      for (let r = 1; r < vals.length; r++) { if (t_(vals[r][c]) !== '') { vacia = false; break; } }
-      if (vacia) ocultas[c + 1] = true;
-    }
-  }
+  if (LIMITE === 24) _ocultarColumnasVacias_(vals, ocultas, lastCol);
 
   // Cabecera del documento. Se reutiliza la detección de la carátula, que sabe
   // distinguir la disposición de Meco (origen en el bloque info, transporte en
@@ -414,13 +425,14 @@ function _htmlImpresionArrastres_() {
   const u = ws ? ws.getLastRow() : 0;
   if (u < 1) return { error: 'La hoja TOP no tiene datos.' };
 
-  const LIMITE = 22; // igual que htmlImprimirTOP: hasta la columna V
+  const LIMITE = _limiteImpresionTOP_(); // igual que htmlImprimirTOP: hasta la V (Antequera: hasta la X, con Trae · Pide · Dif)
   const lastCol = Math.min(ws.getLastColumn(), LIMITE);
   const rng = ws.getRange(1, 1, u, lastCol);
   const vals = rng.getDisplayValues();
   const bgs = rng.getBackgrounds();
   const ocultas = [];
   for (let c = 1; c <= lastCol; c++) ocultas[c] = ws.isColumnHiddenByUser(c);
+  if (LIMITE === 24) _ocultarColumnasVacias_(vals, ocultas, lastCol);
 
   let head = '', body = '';
   for (let r = 0; r < vals.length; r++) {
