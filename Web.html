@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html class="tema-retro80s">
+<html class="tema-retro80sclaro">
 <head>
 <base target="_top">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
@@ -51,12 +51,26 @@
     --color-accent: #3B2F85; --color-success: #00C5B5; --color-danger: #ff5a63;
     --color-info: #00C5B5; --color-warn: #ffd54f;
   }
-  html.tema-retro80s .head{position:relative;padding-bottom:8px;}
-  html.tema-retro80s .head::after{content:'';position:absolute;left:0;right:0;bottom:0;height:4px;border-radius:2px;
+  /* Fresh Prince claro: mismas superficies lavanda, índigo y magenta que HODOS/Hub/Kairos en claro.
+     Los colores de estado (éxito/info/aviso) van oscurecidos respecto al oscuro para llegar a 4,5:1
+     sobre las cuatro superficies; el acento sigue siendo el índigo (blanco encima = 10,9:1). */
+  html.tema-retro80sclaro {
+    --color-bg: #f6f3fb; --color-surface-solid: #e9e4f2;
+    --color-surface: #ede8f6; --color-surface-hover: #ddd5ee;
+    --color-border: #8b83ad;
+    --color-text: #1f1b33; --color-text-muted: #4f4673; --color-text-dim: #6f6791;
+    --color-accent: #3B2F85; --color-success: #08665c; --color-danger: #b71c1c;
+    --color-info: #095a75; --color-warn: #7a5208;
+  }
+  html.tema-retro80s .head, html.tema-retro80sclaro .head{position:relative;padding-bottom:8px;}
+  html.tema-retro80s .head::after, html.tema-retro80sclaro .head::after{content:'';position:absolute;left:0;right:0;bottom:0;height:4px;border-radius:2px;
     background:linear-gradient(90deg,#FF1493 0 20%,#00C5B5 20% 40%,#3B2F85 40% 60%,#FFD700 60% 80%,#FF2400 80% 100%);}
   html.tema-retro80s .tit h1 span{background:linear-gradient(135deg,#FF1493 0%,#00C5B5 35%,#FFD700 70%,#FF2400 100%);
     -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
-  html.tema-retro80s .head-logo{border:2px solid transparent;
+  /* En claro el degradado del título usa tonos más oscuros: el amarillo y el turquesa vivos no se leen sobre lavanda. */
+  html.tema-retro80sclaro .tit h1 span{background:linear-gradient(135deg,#C2106F 0%,#00796F 35%,#9A6F00 70%,#C41E00 100%);
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+  html.tema-retro80s .head-logo, html.tema-retro80sclaro .head-logo{border:2px solid transparent;
     background-image:linear-gradient(#0c0e13,#0c0e13),linear-gradient(135deg,#FF1493,#00C5B5,#3B2F85,#FFD700,#FF2400);
     background-origin:border-box;background-clip:padding-box,border-box;}
   :root {
@@ -119,6 +133,7 @@
   .sw-leroymerlin { background: linear-gradient(135deg,#3f7d32,#f5f4ee); }
   .sw-melocoton { background: linear-gradient(135deg,#d97a5f,#f7ede2); }
   .sw-retro80s { background: linear-gradient(135deg,#FF1493,#00C5B5,#3B2F85,#FFD700,#FF2400); }
+  .sw-retro80sclaro { background: linear-gradient(135deg,#FF1493 0 22%,#00C5B5 22% 42%,#f6f3fb 42%); }
 
   /* Navegación por pestañas */
   .tabs { display: flex; gap: 6px; margin-bottom: 16px; background: var(--color-surface);
@@ -387,7 +402,8 @@
       <button class="tema-sw sw-black" title="Negro" onclick="aplicarTema_('black')"></button>
       <button class="tema-sw sw-leroymerlin" title="Leroy Merlin" onclick="aplicarTema_('leroymerlin')"></button>
       <button class="tema-sw sw-melocoton" title="Melocotón" onclick="aplicarTema_('melocoton')"></button>
-      <button class="tema-sw sw-retro80s activo" title="Fresh Prince" onclick="aplicarTema_('retro80s')"></button>
+      <button class="tema-sw sw-retro80sclaro activo" title="Fresh Prince claro" onclick="aplicarTema_('retro80sclaro')"></button>
+      <button class="tema-sw sw-retro80s" title="Fresh Prince oscuro" onclick="aplicarTema_('retro80s')"></button>
     </div>
   </div>
 
@@ -594,7 +610,7 @@
 
 <script>
   // ---------- Temas (6, en <html>) ----------
-  var TEMAS_ = ['black','leroymerlin','melocoton','retro80s'];
+  var TEMAS_ = ['black','leroymerlin','melocoton','retro80sclaro','retro80s'];
   function aplicarTema_(tema, noGuardar) {
     document.documentElement.className = 'tema-' + tema;
     document.querySelectorAll('.tema-sw').forEach(function(b){
@@ -605,8 +621,8 @@
   (function () {
     var guardado = null;
     try { guardado = localStorage.getItem('panelArrastresTema'); } catch (e) {}
-    // Sin elección guardada: Fresh Prince por defecto (sin guardarlo como elección explícita).
-    var inicial = (guardado && TEMAS_.indexOf(guardado) !== -1) ? guardado : 'retro80s';
+    // Sin elección guardada: Fresh Prince claro por defecto (sin guardarlo como elección explícita).
+    var inicial = (guardado && TEMAS_.indexOf(guardado) !== -1) ? guardado : 'retro80sclaro';
     aplicarTema_(inicial, inicial !== guardado);
   })();
 
