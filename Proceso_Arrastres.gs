@@ -302,8 +302,10 @@ function _procesarArrastresNucleoCalculo_() {
   // tránsito, el de la columna ENTREGA del Detalle) y se imprime con la hoja TOP.
   // Antequera: G (Nombre) se oculta porque F (Tienda) ya trae "014 Marbella" (G sigue ahí: la lógica lo usa).
   if (!hayAntequera) wsTOP.hideColumns(9); else wsTOP.hideColumns(7);   // I (Proveedor) / G (Nombre)
+  // Antequera: X (Dif) se oculta y no se imprime (Pedro, 2026-10-05), pero se conserva: Hodos.gs la lee para el sobrante.
+  if (hayAntequera) wsTOP.hideColumns(24);
   // Antequera: además se ocultan las columnas que quedan VACÍAS en todas las líneas (H, Agrupación, SSCC
-  // Agrupación, Tipo Soporte…) para que Trae · Pide · Dif quepan en la hoja y en la impresión.
+  // Agrupación, Tipo Soporte…) para que Trae · Pide quepan en la hoja y en la impresión.
   if (hayAntequera) {
     for (let c = 0; c < ANCHO; c++) {
       let vacia = true;

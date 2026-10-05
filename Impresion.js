@@ -24,12 +24,14 @@ function _docHTML_(titulo, cuerpo, landscape) {
 }
 
 /**
- * Antequera imprime la hoja TOP hasta la X (Trae · Pide · Dif); el resto de orígenes, hasta la V como siempre.
- * Lo usan TODAS las impresiones de la hoja TOP (htmlImprimirTOP y la automática de procesarArrastres).
+ * Antequera imprime la hoja TOP hasta la W (Trae · Pide); el resto de orígenes, hasta la V como siempre.
+ * La X (Dif) NO se imprime (decisión de Pedro, 2026-10-05): sigue en la hoja, oculta, porque Hodos.gs la lee
+ * para crear la etiqueta de sobrante. Lo usan TODAS las impresiones de la hoja TOP (htmlImprimirTOP y la
+ * automática de procesarArrastres).
  */
 function _limiteImpresionTOP_() {
   const o = _datosCaratula_() || {};
-  return t_(o.origen) === 'Antequera' ? 24 : 22;
+  return t_(o.origen) === 'Antequera' ? 23 : 22;
 }
 
 /** Antequera: marca como ocultas (1-based) las columnas que están vacías en todas las líneas. */
@@ -60,8 +62,8 @@ function htmlImprimirTOP() {
 
   const ocultas = [];
   for (let c = 1; c <= lastCol; c++) ocultas[c] = ws.isColumnHiddenByUser(c);
-  // Antequera: tampoco se imprime ninguna columna que esté vacía en todas las líneas (más sitio para Trae · Pide · Dif).
-  if (LIMITE === 24) _ocultarColumnasVacias_(vals, ocultas, lastCol);
+  // Antequera: tampoco se imprime ninguna columna que esté vacía en todas las líneas (más sitio para Trae · Pide).
+  if (LIMITE === 23) _ocultarColumnasVacias_(vals, ocultas, lastCol);
 
   // Cabecera del documento. Se reutiliza la detección de la carátula, que sabe
   // distinguir la disposición de Meco (origen en el bloque info, transporte en
@@ -425,14 +427,14 @@ function _htmlImpresionArrastres_() {
   const u = ws ? ws.getLastRow() : 0;
   if (u < 1) return { error: 'La hoja TOP no tiene datos.' };
 
-  const LIMITE = _limiteImpresionTOP_(); // igual que htmlImprimirTOP: hasta la V (Antequera: hasta la X, con Trae · Pide · Dif)
+  const LIMITE = _limiteImpresionTOP_(); // igual que htmlImprimirTOP: hasta la V (Antequera: hasta la W, con Trae · Pide)
   const lastCol = Math.min(ws.getLastColumn(), LIMITE);
   const rng = ws.getRange(1, 1, u, lastCol);
   const vals = rng.getDisplayValues();
   const bgs = rng.getBackgrounds();
   const ocultas = [];
   for (let c = 1; c <= lastCol; c++) ocultas[c] = ws.isColumnHiddenByUser(c);
-  if (LIMITE === 24) _ocultarColumnasVacias_(vals, ocultas, lastCol);
+  if (LIMITE === 23) _ocultarColumnasVacias_(vals, ocultas, lastCol);
 
   let head = '', body = '';
   for (let r = 0; r < vals.length; r++) {
