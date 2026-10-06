@@ -67,14 +67,48 @@ function _anqCodigoTienda_(c) {
  * entrada = { exp, tienda, tiendaCodigo, resumen:[], detalle:[], bultos:{}|null }
  */
 function analizarAntequera(entrada) {
+  const r = analizarAntequeraVarias([entrada]);
+  if (r.error) return { error: r.error };
+  return r.planes[0];
+}
+
+/**
+ * Varias expediciones a la vez (una, dos o tres: Málaga, Marbella, Mijas; incluso dos de la misma tienda).
+ * TOM y el catálogo de cerámica se leen UNA sola vez. entradas = [entrada, ...], cada una como en analizarAntequera.
+ * Devuelve { ok, planes: [plan | { ok:false, error, exp, tienda }], avisos: [] }. Un error en una expedición no
+ * tumba las demás: el cliente lo enseña en rojo y no la procesa.
+ */
+function analizarAntequeraVarias(entradas) {
+  const lista = (entradas || []).filter(e => e && (e.resumen || []).length);
+  if (!lista.length) return { error: 'Falta el "Resumen de albaranes": es la base (trae soporte, LM y unidades de cada palé).' };
   const tomDatos = _leerTOMDesdeDrive_();
   if (tomDatos.error) return { error: tomDatos.error };
   // Málaga: la cerámica va en soportes por pedido (ver _anqAnalizar_). Se necesita el catálogo CERAMICA (en caché 6 h).
   let ceramica = null;
-  if (t_((entrada || {}).tienda) === 'Málaga') {
+  if (lista.some(e => t_(e.tienda) === 'Málaga')) {
     try { ceramica = _catalogoCeramica_(); } catch (e) { ceramica = null; }
   }
-  return _anqAnalizar_(entrada, tomDatos, ceramica);
+  return _anqAnalizarVarias_(lista, tomDatos, ceramica);
+}
+
+/** Parte pura de analizarAntequeraVarias (se prueba en Node con TOM real). */
+function _anqAnalizarVarias_(lista, tomDatos, ceramica) {
+  const planes = lista.map(e => {
+    const p = _anqAnalizar_(e, tomDatos, ceramica);
+    if (p.error) return { ok: false, error: p.error, exp: t_(e.exp), tienda: t_(e.tienda) };
+    return p;
+  });
+  const avisos = [];
+  // Un mismo soporte en dos expediciones no puede ser: casi seguro se subió un PDF equivocado.
+  const dondeEsta = {};
+  planes.forEach(p => {
+    if (!p.ok) return;
+    (p.palets || []).forEach(pal => { (dondeEsta[pal.soporte] = dondeEsta[pal.soporte] || []).push(p.tienda + ' · exp ' + p.exp); });
+  });
+  Object.keys(dondeEsta).forEach(s => {
+    if (dondeEsta[s].length > 1) avisos.push('El soporte ' + s + ' sale en varias expediciones (' + dondeEsta[s].join(' y ') + '): revisa que los PDF sean de cada tienda.');
+  });
+  return { ok: planes.some(p => p.ok), planes: planes, avisos: avisos };
 }
 
 /**

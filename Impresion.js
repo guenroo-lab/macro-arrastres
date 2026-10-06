@@ -311,6 +311,56 @@ function _datosCaratula_() {
 }
 
 /**
+ * Carátulas a imprimir: UNA POR EXPEDICIÓN en Antequera (Pedro, 2026-10-05: puede traer 1, 2 o 3 tiendas a la vez y
+ * cada una tiene su expedición); en el resto de orígenes, la de siempre (una sola). Cada elemento es
+ * { origen, transporte, fecha, tienda? } (`tienda` solo en Antequera: "036 Málaga"). Orden: Málaga, Marbella, Mijas
+ * y, dentro de cada tienda, por nº de expedición.
+ */
+function _datosCaratulas_() {
+  const primera = _datosCaratula_();
+  if (!primera) return [];
+  if (t_(primera.origen) !== 'Antequera') return [primera];
+
+  const ws = SpreadsheetApp.getActive().getSheetByName(CFG.HOJAS.TOP);
+  const last = ws.getLastRow();
+  const filas = ws.getRange(2, 1, Math.max(last - 1, 1), 7).getDisplayValues();   // A..G: origen, exp, ..., F tienda, G nombre
+  const orden = { 'MALAGA': 1, 'MARBELLA': 2, 'MIJAS': 3 };
+  const vistos = {}, lista = [];
+  filas.forEach(f => {
+    if (t_(f[0]) !== 'Antequera') return;
+    const exp = t_(f[1]), tienda = t_(f[5]) || t_(f[6]);
+    const k = exp + '|' + tienda;
+    if (vistos[k]) return;
+    vistos[k] = true;
+    const nombre = t_(f[6]).toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    lista.push({ origen: 'Antequera', transporte: exp, fecha: primera.fecha, tienda: tienda, _o: orden[nombre] || 9 });
+  });
+  lista.sort((a, b) => (a._o - b._o) || String(a.transporte).localeCompare(String(b.transporte), 'es', { numeric: true }));
+  lista.forEach(x => { delete x._o; });
+  return lista.length ? lista : [primera];
+}
+
+/**
+ * Todas las carátulas juntas, cada una en su página (vertical, una por expedición).
+ * Devuelve { css, cuerpo, n } o { error }. `clasePagina`: clase de cada bloque (la impresión de arrastres usa
+ * "pagina caratula"; la carátula suelta, ninguna).
+ */
+function _caratulasFragmento_(clasePagina) {
+  const lista = _datosCaratulas_();
+  if (!lista.length) return { error: 'La hoja TOP no tiene datos.' };
+  let css = '', cuerpo = '';
+  for (let i = 0; i < lista.length; i++) {
+    const f = _caratulaFragmento_(lista[i]);
+    if (f.error) return f;
+    css = f.css;
+    // Con una sola carátula el HTML es el de siempre (sin envoltorio extra); las siguientes empiezan en página nueva.
+    const clase = clasePagina ? (clasePagina + (i > 0 ? ' salto' : '')) : (i > 0 ? 'salto' : '');
+    cuerpo += clase ? '<div class="' + clase + '">' + f.cuerpo + '</div>' : f.cuerpo;
+  }
+  return { css: css, cuerpo: cuerpo, n: lista.length };
+}
+
+/**
  * Fragmento reutilizable de la carátula (clases con prefijo car- para no chocar con el TOP).
  * `datos` opcional: { origen, transporte, fecha }. Si no se pasa, se sacan de la
  * hoja TOP (uso de siempre). El ZIP de Meco los pasa a mano porque no toca TOP.
@@ -325,6 +375,7 @@ function _caratulaFragmento_(datos) {
     '.car-logo{height:20mm;}' +
     '.car-tit{background:#e30613;color:#fff;padding:7mm 9mm;border-radius:2px;margin-bottom:10mm;}' +
     '.car-tit h1{margin:0;font-size:26px;letter-spacing:.03em;text-transform:uppercase;}' +
+    (d.tienda ? '.car-tienda{margin-top:2mm;font-size:17px;font-weight:bold;letter-spacing:.04em;}' : '') +
     '.car-campo{border:2.5px solid #111;background:#f4f4f4;padding:7mm 9mm;margin-bottom:8mm;}' +
     '.car-campo .et{font-size:12px;font-weight:bold;letter-spacing:.08em;text-transform:uppercase;color:#555;}' +
     '.car-campo .va{font-size:36px;font-weight:bold;margin-top:2mm;}' +
@@ -338,7 +389,8 @@ function _caratulaFragmento_(datos) {
       '<div class="car-marca"><span>Macro Arrastres · Plataforma Málaga</span></div>' +
       '<img class="car-logo" src="data:image/png;base64,' + CFG.LOGO_TAISA_B64 + '">' +
     '</div>' +
-    '<div class="car-tit"><h1>Plantilla de descarga</h1></div>' +
+    '<div class="car-tit"><h1>Plantilla de descarga</h1>' +
+      (d.tienda ? '<div class="car-tienda">Tienda: ' + esc_(d.tienda) + '</div>' : '') + '</div>' +
     '<div class="car-campo"><div class="et">Origen</div><div class="va">' + esc_(d.origen) + '</div></div>' +
     '<div class="car-campo"><div class="et">Nº transporte</div><div class="va">' + esc_(d.transporte || '—') + '</div></div>' +
     '<div class="car-campo"><div class="et">Fecha de cita</div><div class="va">' + esc_(d.fecha) + '</div></div>' +
@@ -351,17 +403,18 @@ function _caratulaFragmento_(datos) {
 
 /** Imprime solo la carátula (sin el TOP). Se mantiene por si hace falta suelta. */
 function htmlImprimirCaratula() {
-  const f = _caratulaFragmento_();
+  const f = _caratulasFragmento_();   // una por expedición en Antequera; una sola en el resto
   if (f.error) return f;
   const css =
     '@page{size:portrait;margin:12mm;}' +
     '*{box-sizing:border-box;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}' +
     'body{margin:0;font-family:Arial,Helvetica,sans-serif;color:#111;}' +
+    (f.n > 1 ? '.salto{page-break-before:always;}' : '') +
     f.css;
   const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Carátula de descarga</title>' +
     '<style>' + css + '</style></head><body onload="window.focus();window.print();">' +
     f.cuerpo + '</body></html>';
-  return { html: html, n: 1 };
+  return { html: html, n: f.n };
 }
 
 /* ==========================================================================
@@ -419,7 +472,8 @@ function imprimirPedidosPyxisRecepcion() { _abrirImpresion_('htmlImprimirPyxisRe
  * sale sin pintar — visto en real, 2026-09-08).
  */
 function _htmlImpresionArrastres_() {
-  const car = _caratulaFragmento_();
+  // Una carátula por expedición en Antequera (1, 2 o 3 tiendas); en el resto de orígenes, la de siempre.
+  const car = _caratulasFragmento_('pagina caratula');
   if (car.error) return { error: car.error };
 
   const ss = SpreadsheetApp.getActive();
@@ -494,7 +548,7 @@ function _htmlImpresionArrastres_() {
 
   const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Impresión de arrastres</title>' +
     '<style>' + car.css + cssTop + '</style></head><body>' +
-    '<div class="pagina caratula">' + car.cuerpo + '</div>' +
+    car.cuerpo +
     '<div class="pagina salto"><div id="wrapTop"><table id="tblArrastres"><thead>' + head + '</thead><tbody>' + body + '</tbody></table></div></div>' +
     '<scr' + 'ipt>' + script + '</scr' + 'ipt>' +
     '</body></html>';

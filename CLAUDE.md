@@ -274,11 +274,28 @@ vuelca a TOP (`volcarAntequeraLineasTOP`) y llama a `procesarArrastresWeb`.
   tarjetas con cada pedido como ficha, "Agrupación · N pedidos", tarjeta especial de SOBRANTE, resumen arriba y
   selección por grupo. **Nunca `confirm()/alert()/prompt()` del navegador** (Pedro, 2026-10-05): usar
   `confirmarModal` (Web.html y Panel.html).
+- **VARIAS EXPEDICIONES A LA VEZ (2026-10-05, Pedro)**: se pueden subir de golpe los PDF de 1, 2 o 3 tiendas (hasta 9;
+  nunca obligatorio). El cliente (bloque `ANQ-PURO` de `Web.html`: `itemsDePdf`, `claveEnvio`, `repartirResumen`,
+  `mezclarEnvios`, `listaEnvios`) reconoce cada PDF por su contenido y lo asigna a su **envío = expedición** por su
+  cabecera (un Resumen con filas de dos tiendas se reparte); da igual el orden de subida. Antes (v54 y anteriores)
+  se quedaba con el ÚLTIMO PDF de cada tipo y descartaba el resto SIN avisar. Servidor: `analizarAntequeraVarias`
+  (`AntequeraPlan.gs`) lee TOM y el catálogo de cerámica UNA vez y devuelve un plan por expedición; una con error no
+  tumba las demás; el mismo soporte en dos expediciones avisa. Vista previa: una sección por expedición con el color
+  de su tienda + barra total. «Procesar Antequera» vuelca TODAS las líneas en TOP de una vez y lanza
+  `procesarArrastres` UNA vez (retenidos con el flete de cada expedición, lotes HODOS por tienda+expedición).
+  Expediciones sin Resumen salen en rojo y piden confirmar (`confirmarModal`) antes de procesar las demás. Tras
+  procesar, la siguiente subida empieza de cero (`procesado`); enlace «Vaciar los PDF cargados» para empezar a mano.
+  **Carátula: UNA POR EXPEDICIÓN** (`_datosCaratulas_` / `_caratulasFragmento_`, con «Tienda: 036 Málaga» en la
+  cabecera roja), tanto en la impresión automática como en el botón de carátula; el resto de orígenes imprime
+  exactamente lo de siempre (prueba de regresión). OJO: `RETENIDOS` pone un bloque por tienda en columnas contiguas
+  (Málaga A.., Marbella K.., Mijas U..).
 - Antequera NO sirve a Granada. El diálogo antiguo del menú (`AntequeraForm.html` + `volcarAntequeraTOP`)
   sigue vivo pero pierde los palés sin Pegase y ahora avisa: usar el Panel Arrastres.
 - Pruebas (fuera del repo, `Proyectos\_scratch\`): `test_antequera_v2.js` (análisis), `test_antequera_e2e.js`
-  (TOP → retenidos → HODOS con TOM real), `test_antequera_cliente.js` (PDF reales + pdf.js),
-  `test_regresion_otros_origenes.js` (Valencia/Torija/Meco idénticos a HEAD).
+  (TOP → retenidos → HODOS con TOM real), `test_antequera_cliente.js` (PDF reales + pdf.js, incluye las 120 formas
+  de ordenar 5 PDF de 2 tiendas), `test_antequera_multi.js` (3 expediciones punta a punta + carátulas),
+  `test_regresion_otros_origenes.js` (Valencia/Torija/Meco idénticos a HEAD, incluidas carátula e impresión),
+  mutaciones: `mut_multi.js`, `mut_dividir.js`; despliegue: `deploy_panel.ps1`.
 
 ## Sugerencias / mejoras / fallos (`Sugerencias.gs` + `SugerenciasForm.html`)
 

@@ -348,6 +348,14 @@
   .ant-div { padding: 3px 8px; border-radius: 7px; background: color-mix(in srgb, var(--color-warn) 18%, var(--color-bg)); border: 1px solid color-mix(in srgb, var(--color-warn) 50%, var(--color-bg)); }
   .ant-kpi.rev { background: var(--color-accent-bg); border-color: var(--color-accent-border); }
   .ant-kpi.rev b { color: var(--color-danger); }
+  /* Varias expediciones a la vez (1, 2 o 3 tiendas): cada una en su sección con el color de su tienda (--th) */
+  .ant-env { margin: 0 0 22px; padding-left: 12px; border-left: 4px solid var(--th, var(--color-border)); }
+  .ant-env-tit { display: flex; align-items: baseline; gap: 8px; margin: 2px 0 8px; font-size: 17px; font-weight: 800; }
+  .ant-env-tit i { color: var(--th, var(--color-accent)); font-size: 15px; }
+  .ant-env-tit small { font-size: 12px; font-weight: 600; color: var(--color-text-muted); }
+  .ant-env-err { margin: 0 0 8px; padding: 8px 12px; border-radius: 9px; font-size: 12.5px; background: var(--color-accent-bg); border: 1px solid var(--color-accent-border); border-left: 4px solid var(--th, var(--color-danger)); }
+  .ant-global { margin: 0 0 10px; padding: 8px 12px; border-radius: 9px; font-size: 13px; background: var(--color-surface); border: 1px solid var(--color-border); }
+  .ant-global .ant-rojo { color: var(--color-danger); }
   .ant-cuadre { font-size: 12.5px; padding: 7px 11px; border-radius: 9px; margin-bottom: 8px; border: 1px solid var(--color-border); }
   .ant-cuadre.ok { background: var(--color-success-bg); border-color: var(--color-success-border); }
   .ant-cuadre.warn { background: var(--color-accent-bg); border-color: var(--color-accent-border); }
@@ -568,9 +576,10 @@
       <div class="grid g2">
         <div class="cajon" id="cajonAntequera">
           <label class="pick" for="antFile"><i class="fa-solid fa-file-pdf"></i>
-            <span>Añadir Antequera<br><small style="color:var(--color-text-dim)">3 PDF · Resumen + Detalle + Bultos</small></span></label>
+            <span>Añadir Antequera<br><small style="color:var(--color-text-dim)">PDF de 1, 2 o 3 tiendas · Resumen + Detalle + Bultos de cada una</small></span></label>
           <input type="file" id="antFile" accept="application/pdf,.pdf" multiple>
           <div class="fname" id="antFiles"></div>
+          <a href="#" id="antVaciar" style="display:none;font-size:11px;color:var(--color-text-dim);text-decoration:underline">Vaciar los PDF cargados</a>
           <button class="btn green" id="antGen"><i class="fa-solid fa-play"></i><span>Procesar Antequera</span></button>
           <div id="antStatus" style="font-size:11px;color:var(--color-text-dim);margin-top:6px"></div>
         </div>
@@ -964,8 +973,11 @@
   // (AntequeraPlan.gs); aquí solo se leen los PDF y se pinta el resultado.
   (function () {
     var WORKER = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-    var docs = { resumen: null, detalle: null, bultos: null };   // filas ya parseadas de cada PDF
-    var plan = null;          // último análisis del servidor (vista previa)
+    // Puede traer 1, 2 o 3 tiendas a la vez (un envío = una expedición): cada envío es { resumen, detalle, bultos }.
+    var envios = {};          // clave de envío (expedición) -> filas ya parseadas de cada uno de sus PDF
+    var planes = null;        // último análisis del servidor: { ok, planes:[...], avisos:[...] } (vista previa)
+    var procesado = false;    // tras procesar, la siguiente subida empieza de cero (no se arrastran envíos viejos)
+    var pdfsDesconocidos = []; // PDF de la última subida que no se reconocieron (se enseñan en la vista previa)
     var seq = 0;              // descarta respuestas de análisis antiguas
 
     // <<ANQ-PURO  (funciones sin DOM: se prueban en Node con los PDF reales)
@@ -1119,6 +1131,61 @@
         bultos: isNaN(contadores.bultos) ? null : contadores.bultos
       };
     }
+    // ---- Varias expediciones a la vez (1, 2 o 3 tiendas) ----
+    // Clave de envío = nº de expedición (sin ceros); si un PDF no la trae, el código de tienda; si tampoco, 'SIN'.
+    function claveEnvio(exp, code){
+      var e = String(exp||'').replace(/^0+/,'');
+      return e ? 'E' + e : (code ? 'T' + code : 'SIN');
+    }
+    // Un mismo Resumen puede traer filas de más de una expedición/tienda: se reparten por (expedición, cliente).
+    function repartirResumen(rows){
+      var m = {}, orden = [];
+      (rows||[]).forEach(function(r){
+        var k = claveEnvio(r.exp, r.cliente);
+        if (!m[k]){ m[k] = { clave: k, rows: [] }; orden.push(k); }
+        m[k].rows.push(r);
+      });
+      return orden.map(function(k){ return m[k]; });
+    }
+    // Suma lo recién leído a los envíos ya cargados: mismo envío -> sustituye ese tipo de PDF; envío distinto -> lo añade.
+    // nuevos = [{ tipo:'resumen'|'detalle'|'bultos', clave, dato }]. Un PDF sin expedición ni tienda ('SIN') se
+    // une al único envío que haya (como siempre); si hay varios queda aparte y se enseña incompleto.
+    function mezclarEnvios(envios, nuevos){
+      nuevos.forEach(function(n){
+        var k = n.clave;
+        if (k === 'SIN'){
+          var ks = Object.keys(envios).filter(function(x){ return x !== 'SIN'; });
+          if (ks.length === 1) k = ks[0];
+        }
+        if (!envios[k]) envios[k] = { resumen: null, detalle: null, bultos: null };
+        envios[k][n.tipo] = n.dato;
+      });
+      return envios;
+    }
+    var ORDEN_TIENDA = { 'Málaga': 1, 'Marbella': 2, 'Mijas': 3 };
+    // Lista de envíos ordenada por tienda (Málaga, Marbella, Mijas) y expedición: [{ clave, e, entrada }]
+    function listaEnvios(envios){
+      return Object.keys(envios).map(function(k){ return { clave: k, e: envios[k], entrada: entradaDe(envios[k]) }; })
+        .sort(function(a, b){
+          var oa = ORDEN_TIENDA[a.entrada.tienda] || 9, ob = ORDEN_TIENDA[b.entrada.tienda] || 9;
+          return oa - ob || String(a.entrada.exp).localeCompare(String(b.entrada.exp), 'es', { numeric: true });
+        });
+    }
+    // Lo que aporta un PDF ya leído y clasificado: uno o varios { tipo, clave, dato } (un Resumen puede traer varias tiendas).
+    function itemsDePdf(tipo, lines){
+      if (tipo === 'resumen'){
+        return repartirResumen(parseResumen(lines)).map(function(g){ return { tipo: 'resumen', clave: g.clave, dato: { rows: g.rows } }; });
+      }
+      if (tipo === 'detalle'){
+        var cab = cabeceraPdf(lines);
+        return [{ tipo: 'detalle', clave: claveEnvio(cab.exp, cab.tiendaCode), dato: { rows: parseDetalle(lines), cab: cab } }];
+      }
+      if (tipo === 'bultos'){
+        var b = parseBultos(lines);
+        return [{ tipo: 'bultos', clave: claveEnvio(b.exp, b.tiendaCode), dato: { datos: b, exp: b.exp, tiendaCode: b.tiendaCode } }];
+      }
+      return [];
+    }
     // Lo que se manda al servidor. exp y tienda salen del Resumen; si falta, del Detalle o de Bultos.
     function entradaDe(d){
       var exp = '', code = '';
@@ -1164,48 +1231,51 @@
     // en vez de quedarse apagados sin explicación (parecía roto/en bucle).
     function lockAnt(on){ $('antGen').disabled = on; }
 
+    function nombreEnvio(en){ return (en.tienda || 'Tienda ?') + (en.exp ? ' · exp ' + en.exp : ''); }
+    function claseTienda(n){ return ({ 'Málaga': 'malaga', 'Marbella': 'marbella', 'Mijas': 'mijas' })[n] || ''; }
+
     function pintarArchivos(){
-      var t = [];
-      if (docs.resumen) t.push('Resumen ✓'); else t.push('Resumen ✗');
-      if (docs.detalle) t.push('Detalle ✓'); else t.push('Detalle ✗');
-      if (docs.bultos) t.push('Bultos ✓'); else t.push('Bultos ✗');
-      $('antFiles').textContent = t.join(' · ');
-      $('antFiles').parentNode.querySelector('label.pick').classList.toggle('has-file', !!docs.resumen);
+      var lista = listaEnvios(envios);
+      var t = lista.map(function(x){
+        return nombreEnvio(x.entrada) + ': Resumen ' + (x.e.resumen ? '✓' : '✗') + ' · Detalle ' + (x.e.detalle ? '✓' : '✗') + ' · Bultos ' + (x.e.bultos ? '✓' : '✗');
+      });
+      $('antFiles').innerHTML = t.map(escH).join('<br>');
+      $('antFiles').parentNode.querySelector('label.pick').classList.toggle('has-file', lista.some(function(x){ return !!x.e.resumen; }));
+      $('antVaciar').style.display = lista.length ? 'inline-block' : 'none';
     }
+    // Empezar de cero sin procesar nada (p. ej. se subió un PDF equivocado)
+    $('antVaciar').addEventListener('click', function(ev){
+      ev.preventDefault();
+      seq++; envios = {}; planes = null; procesado = false; pdfsDesconocidos = [];
+      pintarArchivos(); $('antPreview').style.display = 'none'; lockAnt(false);
+      $('antStatus').textContent = ''; setStatus('PDF de Antequera vaciados.', '');
+    });
 
     async function procesarPdfs(fileList){
       var files = Array.prototype.slice.call(fileList).filter(function(f){ return /\.pdf$/i.test(f.name) || f.type==='application/pdf'; });
-      if (!files.length){ setStatusAnt('No hay PDF. Sube los 3: Resumen de albaranes, Detalle de contenidos y Relación de bultos.', 'err'); return; }
+      if (!files.length){ setStatusAnt('No hay PDF. Sube los de 1, 2 o 3 tiendas: Resumen de albaranes, Detalle de contenidos y Relación de bultos de cada una.', 'err'); return; }
       if (!window.pdfjsLib){ setStatusAnt('No se pudo cargar pdf.js (¿sin conexión?).', 'err'); return; }
       pdfjsLib.GlobalWorkerOptions.workerSrc = WORKER;
-      setStatusAnt('Leyendo PDF…');
+      setStatusAnt('Leyendo ' + files.length + ' PDF…');
       lockAnt(true);
       try {
-        var nuevos = { resumen:null, detalle:null, bultos:null }, desconocidos = [];
+        var nuevos = [], desconocidos = [];
         for (var i=0;i<files.length;i++){
           var buf = await files[i].arrayBuffer();
           var lines = await extractLines(buf.slice(0));
           var tipo = classify(lines);
-          if (tipo==='resumen') nuevos.resumen = { rows: parseResumen(lines) };
-          else if (tipo==='detalle') nuevos.detalle = { rows: parseDetalle(lines), cab: cabeceraPdf(lines) };
-          else if (tipo==='bultos') { var b = parseBultos(lines); nuevos.bultos = { datos: b, exp: b.exp, tiendaCode: b.tiendaCode }; }
-          else desconocidos.push(files[i].name);
+          var its = itemsDePdf(tipo, lines);
+          if (its.length) nuevos = nuevos.concat(its);
+          else desconocidos.push(files[i].name + (tipo ? ' (sin líneas legibles)' : ''));
         }
-        // ¿Mismo envío que lo ya cargado? Si no (otra expedición), se empieza de cero.
-        var expNuevo = '';
-        ['resumen','detalle','bultos'].forEach(function(k){
-          if (expNuevo || !nuevos[k]) return;
-          expNuevo = k==='resumen' ? (nuevos.resumen.rows.length ? String(nuevos.resumen.rows[0].exp||'').replace(/^0+/,'') : '')
-                   : String((nuevos[k].cab || nuevos[k]).exp || '').replace(/^0+/,'');
-        });
-        var expAct = entradaDe(docs).exp;
-        if (expAct && expNuevo && expAct !== expNuevo) docs = { resumen:null, detalle:null, bultos:null };
-        ['resumen','detalle','bultos'].forEach(function(k){ if (nuevos[k]) docs[k] = nuevos[k]; });
+        // Tras procesar, una subida nueva empieza de cero (no se arrastran las expediciones ya hechas).
+        if (procesado){ envios = {}; planes = null; procesado = false; }
+        mezclarEnvios(envios, nuevos);
+        pdfsDesconocidos = desconocidos;
         pintarArchivos();
-        if (desconocidos.length) setStatusAnt('PDF no reconocido: ' + desconocidos.join(', '), 'err');
-        if (!docs.resumen || !docs.resumen.rows.length){
-          plan = null; $('antPreview').style.display='none'; lockAnt(false);
-          setStatusAnt('Falta el "Resumen de albaranes" (es la base: trae el soporte, LM y unidades de cada palé).', 'err');
+        if (!listaEnvios(envios).some(function(x){ return x.e.resumen && x.e.resumen.rows.length; })){
+          planes = null; $('antPreview').style.display='none'; lockAnt(false);
+          setStatusAnt((desconocidos.length ? 'PDF no reconocido: ' + desconocidos.join(', ') + '. ' : '') + 'Falta el "Resumen de albaranes" (es la base: trae el soporte, LM y unidades de cada palé).', 'err');
           return;
         }
         analizar();
@@ -1215,24 +1285,44 @@
       }
     }
 
+    // Suma de los análisis correctos (las expediciones con error no cuentan)
+    function totalesPlanes(P){
+      var t = { exps: 0, palets: 0, retener: 0, etiqueta: 0, mixtos: 0, sobrantes: 0, udsSobrantes: 0, dividir: 0, revisar: 0 };
+      P.planes.forEach(function(p){
+        if (!p.ok) return;
+        t.exps++; t.palets += p.palets.length;
+        ['retener','etiqueta','mixtos','sobrantes','udsSobrantes','dividir','revisar'].forEach(function(k){ t[k] += (p.resumen[k] || 0); });
+      });
+      return t;
+    }
+
     function analizar(){
       var mi = ++seq;
-      plan = null;
-      setStatusAnt('Cotejando con TOM (pedidos y transporte)… puede tardar unos segundos.');
+      planes = null;
+      var entradas = [], sinResumen = [];
+      listaEnvios(envios).forEach(function(x){
+        if (x.e.resumen && x.e.resumen.rows.length) entradas.push(x.entrada); else sinResumen.push(x.entrada);
+      });
+      setStatusAnt('Cotejando ' + entradas.length + (entradas.length === 1 ? ' expedición' : ' expediciones') + ' con TOM (pedidos y transporte)… puede tardar unos segundos.');
       lockAnt(true);
       google.script.run
         .withSuccessHandler(function(r){
           if (mi !== seq) return;
           lockAnt(false);
-          if (!r || r.error){ plan = null; $('antPreview').style.display='none'; setStatusAnt((r && r.error) || 'No se pudo analizar la expedición.', 'err'); return; }
-          plan = r;
-          pintarPlan(r);
-          var rev = r.resumen.revisar;
-          setStatusAnt(r.palets.length + ' palés analizados: ' + r.resumen.retener + ' con retención, ' + r.resumen.etiqueta + ' con etiqueta' +
-            (r.resumen.mixtos ? ', ' + r.resumen.mixtos + ' mixtos' : '') + (r.resumen.sobrantes ? ', ' + r.resumen.sobrantes + ' sobrante(s) con etiqueta' : '') + (rev ? ' · ' + rev + ' por REVISAR' : '') + '. Revisa la vista previa y pulsa "Procesar Antequera".', rev ? 'err' : 'ok');
+          if (!r || r.error){ planes = null; $('antPreview').style.display='none'; setStatusAnt((r && r.error) || 'No se pudo analizar la expedición.', 'err'); return; }
+          r.sinResumen = sinResumen; r.desconocidos = pdfsDesconocidos;
+          planes = r;
+          pintarPlanes(r);
+          var t = totalesPlanes(r), errores = r.planes.filter(function(p){ return !p.ok; }).length;
+          var mal = t.revisar || sinResumen.length || errores;
+          setStatusAnt(t.palets + ' palés analizados' + (t.exps > 1 ? ' en ' + t.exps + ' expediciones' : '') + ': ' + t.retener + ' con retención, ' + t.etiqueta + ' con etiqueta' +
+            (t.mixtos ? ', ' + t.mixtos + ' mixtos' : '') + (t.sobrantes ? ', ' + t.sobrantes + ' sobrante(s) con etiqueta' : '') + (t.dividir ? ', ' + t.dividir + ' a dividir por pedido' : '') +
+            (t.revisar ? ' · ' + t.revisar + ' por REVISAR' : '') +
+            (sinResumen.length ? ' · ⚠️ ' + sinResumen.length + ' expedición(es) SIN Resumen: no se procesarán' : '') + (errores ? ' · ⚠️ ' + errores + ' con error' : '') +
+            '. Revisa la vista previa y pulsa "Procesar Antequera".', mal ? 'err' : 'ok');
         })
-        .withFailureHandler(function(e){ if (mi !== seq) return; lockAnt(false); plan = null; setStatusAnt(e.message, 'err'); })
-        .analizarAntequera(entradaDe(docs));
+        .withFailureHandler(function(e){ if (mi !== seq) return; lockAnt(false); planes = null; setStatusAnt(e.message, 'err'); })
+        .analizarAntequeraVarias(entradas);
     }
 
     function fmtPeso(p){
@@ -1244,7 +1334,8 @@
       var tit = p.transporte==='SI' ? 'Tiene transporte: se retiene' : (p.transporte==='NO' ? 'Sin transporte: lleva etiqueta' : 'No está en TOM: no se puede confirmar el transporte');
       return '<span class="ant-chip ' + cls + '" title="' + tit + '">' + escH(p.pyxis) + '</span>';
     }
-    function pintarPlan(r){
+    // HTML de UNA expedición (camión, KPIs, cuadre, avisos y tabla de palés). El conjunto lo pinta pintarPlanes.
+    function htmlPlan(r){
       var h = '';
       var cam = r.camion ? ' · camión <b>' + escH(r.camion.transportista) + '</b> ' + escH(r.camion.matricula) +
         (r.camion.precinto ? ' · precinto ' + escH(r.camion.precinto) : '') + (fmtPeso(r.camion.peso) ? ' · ' + fmtPeso(r.camion.peso) : '') : '';
@@ -1257,9 +1348,6 @@
         (r.resumen.sobrantes ? '<div class="ant-kpi sob"><b>' + r.resumen.sobrantes + '</b><span>sobrantes · ' + r.resumen.udsSobrantes + ' uds</span></div>' : '') +
         (r.resumen.dividir ? '<div class="ant-kpi div"><b>' + r.resumen.dividir + '</b><span>a dividir por pedido</span></div>' : '') +
         '<div class="ant-kpi ' + (r.resumen.revisar ? 'rev' : '') + '"><b>' + r.resumen.revisar + '</b><span>revisar</span></div></div>';
-      if (r.resumen.sobrantes) {
-        h += '<label class="ant-opt"><input type="checkbox" id="antSobrantes" checked> Crear etiqueta HODOS de los <b>' + r.resumen.sobrantes + ' sobrante(s)</b> (' + r.resumen.udsSobrantes + ' uds que trae el palé de más y no corresponden a ningún pedido)</label>';
-      }
       var c = r.cuadre, cuadreOk = c.hayBultos && !c.faltanEnResumen.length && !c.sobranEnResumen.length &&
         (c.palesDeclarados == null || c.palesDeclarados === c.palesContados) && (c.bultosDeclarados == null || c.bultosDeclarados === c.bultosContados);
       if (c.hayBultos){
@@ -1296,20 +1384,64 @@
         h += '<tr class="ant-r-' + cls + '"><td><b>' + escH(p.soporte) + '</b><br>' + pal + '</td><td>' + lleva + '</td><td>' + pedidos + '</td><td class="ant-que">' + que + '</td></tr>';
       });
       h += '</tbody></table></div>';
+      return h;
+    }
+
+    // Vista previa de TODAS las expediciones cargadas (1, 2 o 3 tiendas): una sección por expedición, con el
+    // color de su tienda; arriba, el total y lo que no se va a procesar (sin Resumen / con error) en rojo.
+    function pintarPlanes(P){
+      var multi = (P.planes.length + (P.sinResumen || []).length) > 1;
+      var t = totalesPlanes(P);
+      var h = '';
+      if (P.desconocidos && P.desconocidos.length) h += '<div class="ant-env-err">PDF no reconocido (no se ha usado): <b>' + P.desconocidos.map(escH).join(', ') + '</b></div>';
+      (P.sinResumen || []).forEach(function(en){
+        h += '<div class="ant-env-err tienda ' + claseTienda(en.tienda) + '"><b>' + escH(nombreEnvio(en)) + '</b>: falta el <b>Resumen de albaranes</b> → esta expedición NO se procesará. Súbelo y se analiza sola.</div>';
+      });
+      P.planes.forEach(function(p){
+        if (!p.ok) h += '<div class="ant-env-err tienda ' + claseTienda(p.tienda) + '"><b>' + escH(nombreEnvio(p)) + '</b>: ' + escH(p.error) + ' → NO se procesará.</div>';
+      });
+      (P.avisos || []).forEach(function(a){ h += '<div class="ant-env-err">' + escH(a) + '</div>'; });
+      if (multi && t.exps){
+        h += '<div class="ant-global"><b>' + t.exps + (t.exps === 1 ? ' expedición' : ' expediciones') + '</b> · ' + t.palets + ' palés · <b>' + t.retener + '</b> retener · <b>' + t.etiqueta + '</b> etiqueta' +
+          (t.mixtos ? ' · <b>' + t.mixtos + '</b> mixtos' : '') + (t.sobrantes ? ' · <b>' + t.sobrantes + '</b> sobrantes' : '') + (t.dividir ? ' · <b>' + t.dividir + '</b> a dividir' : '') +
+          (t.revisar ? ' · <b class="ant-rojo">' + t.revisar + ' por revisar</b>' : '') + '</div>';
+      }
+      if (t.sobrantes){
+        h += '<label class="ant-opt"><input type="checkbox" id="antSobrantes" checked> Crear etiqueta HODOS de los <b>' + t.sobrantes + ' sobrante(s)</b> (' + t.udsSobrantes + ' uds que trae el palé de más y no corresponden a ningún pedido)</label>';
+      }
+      P.planes.forEach(function(p){
+        if (!p.ok) return;
+        h += '<section class="ant-env tienda ' + claseTienda(p.tienda) + '">' +
+          (multi ? '<div class="ant-env-tit"><i class="fa-solid fa-store"></i> ' + escH(p.tienda) + ' <small>expedición ' + escH(p.exp) + '</small></div>' : '') +
+          htmlPlan(p) + '</section>';
+      });
       var box = $('antPreview');
       box.innerHTML = h;
       box.style.display = 'block';
     }
 
+    // Procesa las expediciones correctas: vuelca TODAS sus líneas en TOP de una vez y lanza procesarArrastres una sola vez
+    // (retenidos, etiquetas HODOS por tienda y expedición, impresión con una carátula por expedición).
     $('antGen').addEventListener('click', function () {
-      if (!plan || !plan.top || !plan.top.length) { setStatus('⚠️ Sube los PDF de Antequera primero (o espera a que termine el análisis).', 'err'); return; }
+      var oks = (planes && planes.planes) ? planes.planes.filter(function(p){ return p.ok && p.top && p.top.length; }) : [];
+      if (!oks.length) { setStatus('⚠️ Sube los PDF de Antequera primero (o espera a que termine el análisis).', 'err'); return; }
+      var fuera = (planes.sinResumen || []).map(nombreEnvio).concat(planes.planes.filter(function(p){ return !p.ok; }).map(nombreEnvio));
+      if (fuera.length){
+        confirmarModal({ titulo: 'Hay expediciones que NO se procesarán', texto: fuera.join('\n') + '\n\n¿Procesar solo las demás (' + oks.map(nombreEnvio).join(', ') + ')?',
+          ok: 'Procesar las demás', cancelar: 'Cancelar', icono: 'fa-triangle-exclamation' }, function(){ generar(oks); });
+      } else generar(oks);
+    });
+
+    function generar(oks){
+      var top = [];
+      oks.forEach(function(p){ top = top.concat(p.top); });
       lockAnt(true);
-      setStatus('<i class="fa-solid fa-spinner spin"></i> Volcando ' + plan.top.length + ' líneas de Antequera en TOP…', 'run');
+      setStatus('<i class="fa-solid fa-spinner spin"></i> Volcando ' + top.length + ' líneas de Antequera (' + oks.length + (oks.length === 1 ? ' expedición' : ' expediciones') + ') en TOP…', 'run');
       var w = window.open('', '_blank');
       // Sin la casilla de sobrantes marcada, se manda el TOP sin la diferencia positiva (no se crean etiquetas de sobrante).
       var chkSob = $('antSobrantes');
-      var topEnvio = (chkSob && !chkSob.checked) ? plan.top.map(function(t){ if (!(t.dif > 0)) return t; var c = {}; Object.keys(t).forEach(function(k){ c[k] = t[k]; }); c.dif = ''; return c; }) : plan.top;
-      var sinPedido = plan.top.filter(function(t){ return !t.pyxis; }).length;
+      var topEnvio = (chkSob && !chkSob.checked) ? top.map(function(t){ if (!(t.dif > 0)) return t; var c = {}; Object.keys(t).forEach(function(k){ c[k] = t[k]; }); c.dif = ''; return c; }) : top;
+      var sinPedido = top.filter(function(t){ return !t.pyxis; }).length;
       google.script.run
         .withSuccessHandler(function(){
           setStatus('<i class="fa-solid fa-spinner spin"></i> Procesando arrastres…', 'run');
@@ -1318,7 +1450,8 @@
               lockAnt(false);
               if (!r || r.error) { if (w) w.close(); setStatus('⚠️ ' + ((r && r.error) || 'Error al procesar.'), 'err'); return; }
               setStatus((sinPedido ? '⚠️ ' + sinPedido + ' línea(s) sin pedido: revisa los palés en rojo de la vista previa. ' : '✅ ') + r.mensaje, sinPedido ? 'err' : 'ok');
-              $('antStatus').textContent = 'Añadido y procesado.'; // solo el texto local; la barra global ya lleva el resumen real de arriba
+              $('antStatus').textContent = 'Añadido y procesado (' + oks.length + (oks.length === 1 ? ' expedición' : ' expediciones') + ').'; // solo el texto local; la barra global ya lleva el resumen real de arriba
+              procesado = true;   // la próxima subida empieza de cero
               if (r.htmlImpresion && w) { w.document.open(); w.document.write(r.htmlImpresion); w.document.close(); }
               else if (w) { w.close(); }
             })
@@ -1327,7 +1460,7 @@
         })
         .withFailureHandler(function(e){ lockAnt(false); if (w) w.close(); setStatus('⚠️ ' + e.message, 'err'); })
         .volcarAntequeraLineasTOP(topEnvio);
-    });
+    }
   })();
 
   // ---------- 2. Retenidos por tienda (vista visual + buscador) ----------
