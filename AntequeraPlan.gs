@@ -227,6 +227,10 @@ function _anqAnalizar_(entrada, tomDatos, ceramica) {
     if (l.pyxis) {
       const f = candidatos(l.lm, l.uds, false).filter(x => t_(x[iT.pyxis]) === l.pyxis)[0];
       if (f) l.desc = t_(f[iT.descReferencia]);
+      // Nº de pedido proveedor (Pegase) que lleva la etiqueta HODOS de tienda (Pedro, 2026-10-06): el de la línea
+      // (tránsito: viene del Detalle/TOM) y, si no lo tiene (stock, resuelto por el Mensaje del PDF), el que TOM
+      // trae para ese Pyxis + LM. Va aparte de `pegase` (que sigue siendo el "Pedido" de la hoja TOP y de RETENIDOS).
+      l.pegaseProv = l.pegase || (f ? t_(f[iT.pegase]) : '');
     }
   });
 
@@ -374,7 +378,8 @@ function _anqAnalizar_(entrada, tomDatos, ceramica) {
     pegase: l.pegase, pyxis: l.pyxis, flujo: l.flujo, soporte: l.soporte,
     lmRaw: l.lmRaw, uds: l.uds, ean: l.ean, proveedor: l.proveedor, desc: l.desc,
     tiendaNum: ('000' + codTienda).slice(-3),
-    pide: l.pide == null ? '' : l.pide, dif: l.sobra ? l.sobra : (l.falta ? -l.falta : '')
+    pide: l.pide == null ? '' : l.pide, dif: l.sobra ? l.sobra : (l.falta ? -l.falta : ''),
+    pegaseProv: l.pegaseProv || ''
   }));
 
   return {

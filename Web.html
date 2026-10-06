@@ -1725,6 +1725,16 @@
   var CLASE_TIENDA_HODOS = { 'málaga': 'malaga', 'malaga': 'malaga', 'marbella': 'marbella', 'mijas': 'mijas', 'granada': 'granada' };
   function claseTiendaHodos(destino) { return CLASE_TIENDA_HODOS[String(destino || '').toLowerCase()] || ''; }
 
+  // Línea de abajo de la etiqueta (Antequera): "ANTEQUERA · PED. PROV. 81406165" -> "PED. PROV. 81406165" ('' si no lleva)
+  function provHodos(e) {
+    var p = String(e.origenTexto || '').split(' · ');
+    return p.length > 1 ? p.slice(1).join(' · ') : '';
+  }
+  function chipProvHodos(e) {
+    var p = provHodos(e);
+    return p ? '<span title="Nº de pedido proveedor: sale en la línea de abajo de la etiqueta"><i class="fa-solid fa-truck-ramp-box"></i>' + escH(p) + '</span>' : '';
+  }
+
   function htmlTarjetaHodos(e, gi) {
     if (esSobranteHodos(e)) {
       var t = pedidosDeEtiqueta(e);   // [SOBRANTE, "3 UDS", "LM 123", "PED 456"]
@@ -1735,6 +1745,7 @@
           '<span class="hd-meta">' +
             '<span><i class="fa-solid fa-barcode"></i>' + escH(t[2] || '') + '</span>' +
             (t[3] ? '<span><i class="fa-solid fa-hashtag"></i>' + escH(t[3]) + '</span>' : '') +
+            chipProvHodos(e) +
             '<span><i class="fa-solid fa-store"></i>' + escH(e.destino || '—') + '</span>' +
             (e.fechaCreacion ? '<span><i class="fa-regular fa-clock"></i>' + escH(fmtFechaHodos(e.fechaCreacion)) + '</span>' : '') +
           '</span>' +
@@ -1749,6 +1760,7 @@
         (agr ? '<span class="hd-agr"><i class="fa-solid fa-layer-group"></i>Agrupación · ' + ps.length + ' pedidos</span>' : '') +
         '<span class="hd-meta">' +
           '<span><i class="fa-solid fa-store"></i>' + escH(e.destino || '—') + '</span>' +
+          chipProvHodos(e) +
           (e.soporteTotal > 1 ? '<span><i class="fa-solid fa-boxes-stacked"></i>Soporte ' + escH(e.soporteNum) + ' de ' + escH(e.soporteTotal) + '</span>' : '') +
           (e.fechaCreacion ? '<span><i class="fa-regular fa-clock"></i>' + escH(fmtFechaHodos(e.fechaCreacion)) + '</span>' : '') +
         '</span>' +

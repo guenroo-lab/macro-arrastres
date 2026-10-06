@@ -197,7 +197,7 @@ function volcarAntequeraLineasTOP(lineas) {
   const malas = lineas.filter(l => !/^\d{5,}$/.test(t_((l || {}).soporte)));
   if (malas.length) throw new Error('Hay ' + malas.length + ' línea(s) sin soporte. Vuelve a subir los PDF.');
 
-  const ANCHO = 24; // A..X
+  const ANCHO = 25; // A..Y (Y = nº de pedido proveedor para la etiqueta HODOS; oculta y sin imprimir)
   const ss = SpreadsheetApp.getActive();
   const wsTOP = ss.getSheetByName(CFG.HOJAS.TOP);
   if (!wsTOP) throw new Error('No existe la hoja "' + CFG.HOJAS.TOP + '".');
@@ -205,7 +205,7 @@ function volcarAntequeraLineasTOP(lineas) {
   const cab = new Array(ANCHO).fill('');
   cab[0] = 'Origen'; cab[1] = 'Exp'; cab[5] = 'Tienda'; cab[6] = 'Nombre'; cab[8] = 'Proveedor'; cab[9] = 'Pedido'; cab[10] = 'Pyxis';
   cab[11] = 'Flujo'; cab[12] = 'Agrupación'; cab[15] = 'Soporte'; cab[16] = 'SSCC';
-  cab[18] = 'LM'; cab[19] = 'EAN'; cab[20] = 'Articulo'; cab[21] = 'Trae'; cab[22] = 'Pide'; cab[23] = 'Dif';
+  cab[18] = 'LM'; cab[19] = 'EAN'; cab[20] = 'Articulo'; cab[21] = 'Trae'; cab[22] = 'Pide'; cab[23] = 'Dif'; cab[24] = 'PedProv';
 
   const matriz = [cab];
   let sinPedido = 0, sobrantes = 0;
@@ -232,6 +232,8 @@ function volcarAntequeraLineasTOP(lineas) {
     fila[21] = l.uds == null ? '' : t_(l.uds);
     fila[22] = (l.pide === '' || l.pide == null) ? '' : t_(l.pide);
     fila[23] = (l.dif === '' || l.dif == null) ? '' : t_(l.dif);
+    // Y = nº de pedido proveedor (Pegase, o el de TOM si la línea no lo trae): lo lee Hodos.gs para la línea de abajo de la etiqueta.
+    fila[24] = t_(l.pegaseProv);
     if (fila[10] === '') sinPedido++;
     palets[fila[15]] = true;
     if (fila[23] !== '' && Number(fila[23]) > 0) sobrantes++;

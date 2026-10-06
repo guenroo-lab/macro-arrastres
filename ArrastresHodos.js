@@ -15,6 +15,9 @@
  * Las líneas sin origen (TRAMECO) se excluyen. Devuelve un array de
  * { origen, destino, pedidosTexto, expedicion }, uno por combinación, en el
  * orden en que aparece cada combinación por primera vez.
+ * Si alguna línea trae `sufijo` (Antequera: "PED. PROV. 81406165", la línea de abajo de la etiqueta), el lote lleva además
+ * `sufijosOrigen`: un array alineado 1:1 con las líneas de pedidosTexto ('' = sin sufijo). Sin ningún sufijo, el lote es
+ * idéntico al de siempre (no se añade la clave).
  */
 function _agruparLineasHodosPorLote_(lineas) {
   const porClave = {};
@@ -23,14 +26,17 @@ function _agruparLineasHodosPorLote_(lineas) {
     if (!l.origen) return; // TRAMECO: sin origen, no se manda
     const clave = l.origen + '|' + l.tienda + '|' + (l.expedicion || '');
     if (!porClave[clave]) {
-      porClave[clave] = { origen: l.origen, destino: l.tienda, expedicion: l.expedicion || '', textos: [] };
+      porClave[clave] = { origen: l.origen, destino: l.tienda, expedicion: l.expedicion || '', textos: [], sufijos: [] };
       orden.push(clave);
     }
     porClave[clave].textos.push(l.texto);
+    porClave[clave].sufijos.push(l.sufijo || '');
   });
   return orden.map(clave => {
     const g = porClave[clave];
-    return { origen: g.origen, destino: g.destino, pedidosTexto: g.textos.join('\n'), expedicion: g.expedicion };
+    const lote = { origen: g.origen, destino: g.destino, pedidosTexto: g.textos.join('\n'), expedicion: g.expedicion };
+    if (g.sufijos.some(s => s !== '')) lote.sufijosOrigen = g.sufijos;
+    return lote;
   });
 }
 
@@ -61,10 +67,10 @@ function _enviarLineasHodos_(lineas) {
         method: 'post',
         contentType: 'application/json',
         headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() },
-        payload: JSON.stringify({
+        payload: JSON.stringify(Object.assign({
           accion: 'registrarLoteArrastre', token: token, origen: g.origen,
           destino: g.destino, pedidosTexto: g.pedidosTexto, expedicion: g.expedicion, operario: operario
-        }),
+        }, g.sufijosOrigen ? { sufijosOrigen: g.sufijosOrigen } : {})),
         muteHttpExceptions: true
       });
       const json = JSON.parse(resp.getContentText());

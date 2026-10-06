@@ -289,6 +289,18 @@ vuelca a TOP (`volcarAntequeraLineasTOP`) y llama a `procesarArrastresWeb`.
   cabecera roja), tanto en la impresión automática como en el botón de carátula; el resto de orígenes imprime
   exactamente lo de siempre (prueba de regresión). OJO: `RETENIDOS` pone un bloque por tienda en columnas contiguas
   (Málaga A.., Marbella K.., Mijas U..).
+- **Etiqueta HODOS de Antequera con Nº DE PEDIDO PROVEEDOR (2026-10-06, Pedro)**: además del pedido cliente, la etiqueta
+  que va a tienda lleva en su línea de abajo, bajo «ANTEQUERA», `PED. PROV. 81406165` (el Pegase = «Nº pedido proveedor»
+  de TOM; Pedro eligió este dato y esta posición, no el nombre del proveedor). Pegase de cada línea: el del Detalle/TOM en
+  tránsito y, si no lo trae (stock, resuelto por el Mensaje), el de TOM para ese Pyxis+LM (`l.pegaseProv` en
+  `AntequeraPlan.gs`; NO se toca `l.pegase`, que sigue siendo el «Pedido» de TOP/RETENIDOS). Viaja en la col **Y(24)
+  «PedProv»** de TOP (oculta como la X, nunca impresa). `Hodos.gs` (`_sufijoPedProv_`: varios sin repetir con « / »,
+  máx. 3 y « +N») lo pone en `lineas[].sufijo` de cada etiqueta (palé, agrupación, una-por-pedido de la cerámica de Málaga y
+  SOBRANTE); `ArrastresHodos.gs` manda `sufijosOrigen` (array alineado 1:1 con `pedidosTexto`; la clave solo existe si
+  hay alguno → el resto de orígenes manda exactamente lo de siempre). HODOS (v93, `IntegracionIncpc.gs`/`Backend.gs`) lo
+  guarda como `origenTexto = "ANTEQUERA · PED. PROV. …"` (sin columna nueva), pinta la línea de abajo aparte y más pequeña
+  (`.origen-prov`) y compacta el interlineado en grupos de 4-5 pedidos para que quepa. Sin Pegase la etiqueta sale como
+  siempre. La pestaña Hodos del Panel muestra el dato como chip en cada tarjeta.
 - Antequera NO sirve a Granada. El diálogo antiguo del menú (`AntequeraForm.html` + `volcarAntequeraTOP`)
   sigue vivo pero pierde los palés sin Pegase y ahora avisa: usar el Panel Arrastres.
 - Pruebas (fuera del repo, `Proyectos\_scratch\`): `test_antequera_v2.js` (análisis), `test_antequera_e2e.js`

@@ -49,6 +49,17 @@
  * La hoja se reconstruye entera en cada pasada (no acumula).
  */
 
+/**
+ * Línea de abajo de la etiqueta HODOS de Antequera (Pedro, 2026-10-06): "PED. PROV. 81406165" = nº de pedido proveedor
+ * (Pegase) de los pedidos de la etiqueta. Varios se separan con " / " (máx. 3, luego " +N"); sin ninguno, vacío.
+ */
+function _sufijoPedProv_(nums) {
+  const u = [];
+  (nums || []).forEach(n => { const s = t_(n); if (s !== '' && u.indexOf(s) === -1) u.push(s); });
+  if (!u.length) return '';
+  return 'PED. PROV. ' + u.slice(0, 3).join(' / ') + (u.length > 3 ? ' +' + (u.length - 3) : '');
+}
+
 /** Subsecciones de la Sección 6 que se consideran cerámica (referencia). */
 const HODOS_SUBSECCIONES_CERAMICA = [1, 2, 3, 4, 5, 10, 20, 70, 80];
 
@@ -246,7 +257,7 @@ function _generarHodos_(filasFinal, tom, uTOM, iTOM, cA, cB, cG, cJ, cK, cL, cP,
       const difA = parseFloat(String(fila[23] == null ? '' : fila[23]).replace(',', '.'));
       if (difA > 0 && t_(fila[cK]) !== '' && t_(fila[cS]) !== '') {
         if (!antSobrantes[tienda]) antSobrantes[tienda] = [];
-        antSobrantes[tienda].push({ texto: ['SOBRANTE', (Math.round(difA * 100) / 100) + ' UDS', 'LM ' + t_(fila[cS]), 'PED ' + t_(fila[cK])].join('+'), expedicion: expedicionFila });
+        antSobrantes[tienda].push({ texto: ['SOBRANTE', (Math.round(difA * 100) / 100) + ' UDS', 'LM ' + t_(fila[cS]), 'PED ' + t_(fila[cK])].join('+'), expedicion: expedicionFila, sufijo: _sufijoPedProv_([fila[24]]) });
         nSobrantes++;
       }
       const pyxA = t_(fila[cK]), sopA = t_(fila[cP]);
@@ -266,8 +277,10 @@ function _generarHodos_(filasFinal, tom, uTOM, iTOM, cA, cB, cG, cJ, cK, cL, cP,
       nAntequera++;
       if (!antPorTienda[tienda]) antPorTienda[tienda] = { soportes: {}, orden: [] };
       const TA = antPorTienda[tienda];
-      if (!(sopA in TA.soportes)) { TA.soportes[sopA] = { pedidos: [], expedicion: expedicionFila }; TA.orden.push(sopA); }
+      if (!(sopA in TA.soportes)) { TA.soportes[sopA] = { pedidos: [], expedicion: expedicionFila, pegProv: {} }; TA.orden.push(sopA); }
       if (TA.soportes[sopA].pedidos.indexOf(pyxA) === -1) TA.soportes[sopA].pedidos.push(pyxA);
+      // Nº de pedido proveedor (col Y) de cada pedido del palé: va en la línea de abajo de la etiqueta (Pedro, 2026-10-06)
+      if (t_(fila[24]) !== '') (TA.soportes[sopA].pegProv[pyxA] = TA.soportes[sopA].pegProv[pyxA] || []).push(t_(fila[24]));
       continue;
     }
 
@@ -401,18 +414,19 @@ function _generarHodos_(filasFinal, tom, uTOM, iTOM, cA, cB, cG, cJ, cK, cL, cP,
           nAntDivididos++;
           S.pedidos.forEach(p => {
             salida.push([tienda, p]);
-            lineas.push({ tienda: tienda, texto: p, origen: 'Antequera', expedicion: S.expedicion });
+            lineas.push({ tienda: tienda, texto: p, origen: 'Antequera', expedicion: S.expedicion, sufijo: _sufijoPedProv_(S.pegProv[p]) });
           });
           return;
         }
         const texto = S.pedidos.join('+');
         salida.push([tienda, texto]);
-        lineas.push({ tienda: tienda, texto: texto, origen: 'Antequera', expedicion: S.expedicion });
+        lineas.push({ tienda: tienda, texto: texto, origen: 'Antequera', expedicion: S.expedicion,
+          sufijo: _sufijoPedProv_([].concat.apply([], S.pedidos.map(p => S.pegProv[p] || []))) });
       });
     }
     (antSobrantes[tienda] || []).forEach(x => {
       salida.push([tienda, x.texto]);
-      lineas.push({ tienda: tienda, texto: x.texto, origen: 'Antequera', expedicion: x.expedicion });
+      lineas.push({ tienda: tienda, texto: x.texto, origen: 'Antequera', expedicion: x.expedicion, sufijo: x.sufijo });
     });
   });
 
