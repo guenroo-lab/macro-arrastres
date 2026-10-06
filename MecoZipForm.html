@@ -7,6 +7,7 @@
     #estado { margin-top: 12px; white-space: pre-wrap; }
     .error { color: #c00; }
     .ok { color: #2a7; }
+    .aviso { color: #a60; }
     button { margin-top: 12px; }
   </style>
 </head>
@@ -38,21 +39,29 @@
     function mostrarResultado(r) {
       const estado = document.getElementById('estado');
       if (r.faltan.length) {
-        estado.innerHTML = '<span class="error">Faltan archivos en el ZIP:<br>' + r.faltan.join('<br>') + '</span>';
+        estado.innerHTML = '<span class="error">El ZIP no trae nada que procesar. Falta:<br>' + r.faltan.join('<br>') + '</span>';
         return;
       }
-      let txt = '<span class="ok">CCM listo para imprimir.</span><br>';
-      if (r.hodos.errorConfig) {
-        txt += '<span class="error">HODOS: ' + r.hodos.errorConfig + '</span>';
-      } else {
-        txt += 'HODOS: ' + r.hodos.ok.length + ' tienda(s) OK';
-        if (r.hodos.fallidos.length) {
-          txt += '<br><span class="error">Fallaron: ' + r.hodos.fallidos.map(function (f) { return f.destino + ' (' + f.error + ')'; }).join(', ') + '</span>';
+      // Una tienda sin archivos en el ZIP no es un error: no se hace esa tienda y
+      // el servidor la nombra en r.avisos (lo mismo si no trae el Excel de HODOS).
+      let txt = '';
+      if (r.htmlImpresion) txt += '<span class="ok">CCM listo para imprimir (' + r.tiendasCcm.join(', ') + ').</span><br>';
+      if (r.hodos) {
+        if (r.hodos.errorConfig) {
+          txt += '<span class="error">HODOS: ' + r.hodos.errorConfig + '</span>';
+        } else {
+          txt += 'HODOS: ' + r.hodos.ok.length + ' tienda(s) OK';
+          if (r.hodos.fallidos.length) {
+            txt += '<br><span class="error">Fallaron: ' + r.hodos.fallidos.map(function (f) { return f.destino + ' (' + f.error + ')'; }).join(', ') + '</span>';
+          }
         }
       }
+      (r.avisos || []).forEach(function (a) { txt += '<br><span class="aviso">ℹ️ ' + a + '</span>'; });
       estado.innerHTML = txt;
-      const ventana = window.open('', '_blank');
-      ventana.document.write(r.htmlImpresion);
+      if (r.htmlImpresion) {
+        const ventana = window.open('', '_blank');
+        ventana.document.write(r.htmlImpresion);
+      }
     }
   </script>
 </body>

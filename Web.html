@@ -534,6 +534,7 @@
   }
   #status.show { display: block; }
   #status.run { border-color: color-mix(in srgb, var(--color-warn) 60%, transparent); color: var(--color-warn); }
+  #status.warn { border-color: color-mix(in srgb, var(--color-warn) 60%, transparent); color: var(--color-warn); }
   #status.ok  { border-color: var(--color-success-border); color: var(--color-success); }
   #status.err { border-color: color-mix(in srgb, var(--color-danger) 65%, transparent); color: var(--color-danger); }
   .spin { display: inline-block; animation: sp 1s linear infinite; }
@@ -912,14 +913,19 @@
       google.script.run
         .withSuccessHandler(function(r){
           lock(btn, false);
-          if (r.faltan && r.faltan.length) { if (w) w.close(); setStatus('⚠️ Faltan archivos en el ZIP: ' + r.faltan.join(', '), 'err'); return; }
-          var msg = 'CCM listo para imprimir.';
-          if (r.hodos && r.hodos.errorConfig) msg += ' ⚠️ HODOS: ' + r.hodos.errorConfig;
+          if (r.faltan && r.faltan.length) { if (w) w.close(); setStatus('⚠️ El ZIP no trae nada que procesar. Falta: ' + r.faltan.join(', '), 'err'); return; }
+          // Una tienda sin archivos en el ZIP no es un error: no se hace esa tienda y el
+          // servidor la nombra en r.avisos (igual si no trae el Excel de HODOS). Con algo
+          // que leer (avisos, fallos de HODOS) el estado no se autooculta a los 4 s.
+          var msg = r.htmlImpresion ? 'CCM listo para imprimir (' + (r.tiendasCcm || []).join(', ') + ').' : '', fallo = false;
+          if (r.hodos && r.hodos.errorConfig) { msg += ' ⚠️ HODOS: ' + r.hodos.errorConfig; fallo = true; }
           else if (r.hodos) {
             msg += ' HODOS: ' + r.hodos.ok.length + ' tienda(s) OK';
-            if (r.hodos.fallidos.length) msg += ' · fallaron: ' + r.hodos.fallidos.map(function(f){ return f.destino + ' (' + f.error + ')'; }).join(', ');
+            if (r.hodos.fallidos.length) { msg += ' · fallaron: ' + r.hodos.fallidos.map(function(f){ return f.destino + ' (' + f.error + ')'; }).join(', '); fallo = true; }
           }
-          setStatus('✅ ' + msg, 'ok');
+          var avisos = r.avisos || [];
+          avisos.forEach(function(a){ msg += ' ℹ️ ' + a; });
+          setStatus((fallo ? '⚠️ ' : '✅ ') + msg.trim(), (fallo || avisos.length) ? 'warn' : 'ok');
           if (r.htmlImpresion && w) { w.document.open(); w.document.write(r.htmlImpresion); w.document.close(); }
           else if (w) { w.close(); }
         })

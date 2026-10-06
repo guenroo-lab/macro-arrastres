@@ -328,6 +328,20 @@ valores son números (`_cmpPyxis_`), no alfabética. El color alterna por ese mi
 La carátula (`_datosCaratula_`, Impresion.gs) muestra ese nº de Optimus (col A) como "Nº transporte"
 bajo "Origen" — en el formato Arrastres normal, en cambio, ese campo sí sale de Flete (columna C).
 
+### ZIP de Meco: una tienda sin archivos NO bloquea (2026-10-06)
+
+`procesarZipMeco` (`MecoZip.gs`; lo llaman el cajón de `Web.html` y el diálogo `MecoZipForm.html`) hace lo que el ZIP
+trae y se salta lo que no trae. Pedro: «si no existen archivos de una tienda no se hace esa tienda y listo» (antes
+cualquier carpeta ausente, p. ej. `CCM/E279` cuando Mijas no manda nada, devolvía «Faltan archivos» y no hacía NADA).
+- Sin carpeta `CCM/Exxx` (o con su Albarán sin líneas): esa tienda no se imprime y sale un aviso informativo en `avisos`.
+- Sin el Excel de PLAT MALAGA (o sin pedidos de ninguna tienda conocida): el CCM se imprime y no se crean etiquetas HODOS (aviso).
+- `faltan` (rechazo) solo si el ZIP no trae NADA que procesar. Respuesta: `{faltan, avisos, htmlImpresion, hodos, tiendasCcm}`,
+  con `htmlImpresion`/`hodos` = null si esa parte no se hizo (las dos pantallas lo tratan).
+- La fecha de llegada sale del Albarán de E036 si está (como siempre) y, si no, de la primera tienda con líneas.
+- El Excel de PLAT MALAGA va por su cuenta: si trae pedidos de una tienda se crea su etiqueta aunque su carpeta de CCM falte.
+- Pruebas (fuera del repo, `Proyectos\_scratch\`): `test_meco_zip_tiendas_ausentes.js` (ZIP reales de Downloads\R-*.zip, HEAD
+  idéntico en ZIP completos) y `mut_meco_zip.js` (17 mutaciones, todas deben morir).
+
 ## Despliegue (clasp)
 
 Ver `README_CLAUDE_CODE.md`.
