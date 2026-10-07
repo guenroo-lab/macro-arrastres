@@ -345,3 +345,15 @@ cualquier carpeta ausente, p. ej. `CCM/E279` cuando Mijas no manda nada, devolv�
 ## Despliegue (clasp)
 
 Ver `README_CLAUDE_CODE.md`.
+## TOM desde Drive (`TOMDrive.gs`) — lectura robusta (2026-10-07)
+
+`_leerTOMDesdeDrive_` lee `pedidos_totales.csv` de la carpeta de inventarios (id en `TOM_DRIVE_CARPETA_ID`; el robot lo sube en
+minúsculas y `getFilesByName` lo encuentra aunque el código diga «Pedidos_Totales.csv»; ahora se buscan los dos nombres y se
+ordenan por fecha, el más reciente primero). Lo usan TODOS los procesos (Valencia/Torija, Meco, Recepción, Antequera). Un día
+dio «TOM (Drive): no encuentro en la cabecera estas columnas: pyxis, transporte, referencia, …» (las 7 a la vez, macro parado) y
+no se pudo reproducir con la muestra de Drive (la cabecera era la de siempre), así que se endureció SIN cambiar el camino normal:
+si UTF-8 + «;» + cabecera en la 1ª fila no encuentra las columnas, prueba UTF-16 e ISO-8859-1, detecta el separador (; , TAB),
+busca la cabecera en las 10 primeras filas, compara los nombres normalizados (`_normCabeceraTOM_`: sin acentos, «Nº»/«N°»/«No»,
+mayúsculas, comillas) y, si el archivo más reciente no sirve (subida a medias), prueba el anterior. **Si TODO falla, el error dice
+qué ha leído** (archivo, bytes, hora, filas, columnas, separador, cabecera y el hex de la 1ª celda): pedir la captura. Pruebas:
+`_scratch\test_tom_drive.js` (+ `mut_tom.js`, 9 mutaciones). Con el camino normal el resultado es idéntico al de antes (comparado con HEAD).

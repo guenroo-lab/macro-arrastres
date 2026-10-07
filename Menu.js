@@ -99,7 +99,21 @@ function ultimaFilaCol_(sheet, col) {
  * Devuelve índices 0-based; `undefined` si no encuentra esa cabecera.
  * Usado por Proceso_Arrastres.gs, Proceso_Recepcion.gs y Hodos.gs.
  */
+/**
+ * Cabecera normalizada para comparar: sin BOM ni comillas, sin acentos, "º/°" -> "o", minúsculas y solo letras y
+ * dígitos. Así "Nº Pedido cliente", "N° pedido cliente" y "NO PEDIDO CLIENTE" son la misma columna.
+ */
+function _normCabeceraTOM_(s) {
+  return String(s == null ? '' : s)
+    .replace(/[\uFEFF"']/g, '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[\u00ba\u00b0\u00aa]/g, 'o')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
+}
+
 function _indicesTOM_(cabecera) {
+  // Nombre EXACTO de siempre -> clave. Se mantiene tal cual (es lo que ha funcionado en producción)...
   const MAPA = {
     'Nº Pedido cliente': 'pyxis',
     'Tiene transporte': 'transporte',
@@ -112,9 +126,15 @@ function _indicesTOM_(cabecera) {
     // para no cruzar LM + unidades con pedidos de otra tienda.
     'Nº Tienda': 'tienda'
   };
+  // ...y, si no coincide exacto, la misma columna normalizada (acentos, mayúsculas, "N°"/"No"/"Num"...).
+  const NORM = {};
+  Object.keys(MAPA).forEach(k => { NORM[_normCabeceraTOM_(k)] = MAPA[k]; });
+  ['npedidocliente', 'numpedidocliente', 'numeropedidocliente'].forEach(a => { NORM[a] = 'pyxis'; });
+  ['npedidoproveedor', 'numpedidoproveedor', 'numeropedidoproveedor'].forEach(a => { NORM[a] = 'pegase'; });
+  ['ntienda', 'numtienda', 'numerotienda'].forEach(a => { NORM[a] = 'tienda'; });
   const idx = {};
   for (let c = 0; c < cabecera.length; c++) {
-    const clave = MAPA[t_(cabecera[c])];
+    const clave = MAPA[t_(cabecera[c])] || NORM[_normCabeceraTOM_(cabecera[c])];
     if (clave && idx[clave] === undefined) idx[clave] = c;
   }
   return idx;
