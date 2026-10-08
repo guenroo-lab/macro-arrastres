@@ -379,6 +379,13 @@ function _procesarArrastresNucleoCalculo_() {
   // TOM sin actualizar: se usa el último CSV que haya en Drive (Pedro, 2026-10-08), pero se dice.
   const avTom = (typeof _avisoTOMAntiguo_ === 'function') ? _avisoTOMAntiguo_(tomDatos) : '';
   if (avTom) msg = '⚠️ ' + avTom + ' · ' + msg;
+  // ...o si no trae alguna de las tiendas que hay en este TOP (un export manual con otras tiendas).
+  if (typeof _avisoTOMSinTiendas_ === 'function') {
+    const necesarias = {};
+    for (let i = 1; i < uTOP; i++) { const c = _codigoTOMdeTienda_(top[i][cG]); if (c) necesarias[c] = true; }
+    const avTie = _avisoTOMSinTiendas_(tomDatos, Object.keys(necesarias));
+    if (avTie) msg = '⚠️ ' + avTie + ' · ' + msg;
+  }
   if (envio.ok.length || envio.fallidos.length) {
     msg += ' · Envío HODOS: ' + envio.ok.length + ' lote(s) OK';
     if (envio.fallidos.length) {

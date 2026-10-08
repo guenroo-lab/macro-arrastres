@@ -368,3 +368,17 @@ comillas); (6) si el más reciente no sirve, prueba el anterior; (7) **aunque el
 aviso del análisis de Antequera y principio del resumen de procesarArrastres; (8) si TODO falla, el error dice qué ha leído (archivo,
 bytes, hora, filas, columnas, separador y las primeras celdas de la cabecera). Con el CSV de siempre el resultado es idéntico al de
 antes (comparado con el código v57). Pruebas: `_scratch\test_tom_drive.js`, `test_antequera_multi.js` (avisos), `mut_tom.js` (15 mutaciones).
+
+**Dos orígenes del CSV, mismo nombre (`pedidos_totales.csv`), contenido DISTINTO** (comparado con muestras reales de Drive):
+| | robot (`TOM_bucle.ps1`, cada 4 h) | subida a mano (export de la web de TOM, «Pedidos Vivos con líneas») |
+|---|---|---|
+| BOM / título | dos BOM, SIN título | un BOM + línea de título + línea en blanco |
+| columnas | 110 | 124 (las 110 en el mismo orden + 14 «Infolog») |
+| tiendas | 14, 36, 279 **y 43 (Granada)** | solo 14, 36 y 279 (**sin Granada**) |
+| ventana | último año | desde la fecha que se ponga (p. ej. 2025-09-01) hasta el día del export |
+Los dos se leen. Lo único que cambia el resultado es la **cobertura de tiendas**: Granada (043) solo se procesa en **Recepción**
+(`TIENDA_RECEPCION`); Arrastres/Antequera/Meco solo sirven a Málaga, Marbella y Mijas. Con el export manual, los pedidos de
+Granada en Recepción no se coteja­ban ni se retenían SIN avisar; ahora `_tiendasEnTOM_` anota qué tiendas trae el TOM
+(`fuente.tiendas`) y `_avisoTOMSinTiendas_` avisa («El TOM usado … NO trae pedidos de Granada (43)…») en Recepción (mensaje), en
+procesarArrastres y en el análisis de Antequera, solo si el TOP/expediciones que se procesan usan esa tienda. Prueba de Recepción con
+hojas simuladas: `_scratch\test_recepcion_tom.js` (Granada: 0 VERDE con el manual, 1 con el del robot).

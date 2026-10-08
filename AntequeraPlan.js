@@ -111,6 +111,9 @@ function _anqAnalizarVarias_(lista, tomDatos, ceramica) {
   // TOM sin actualizar (se usa igualmente el último que haya en la carpeta): los pedidos posteriores no estarán.
   const avTom = (typeof _avisoTOMAntiguo_ === 'function') ? _avisoTOMAntiguo_(tomDatos) : '';
   if (avTom) avisos.unshift(avTom + '. Los pedidos hechos después no están en él: saldrán como "sin pedido" (REVISAR).');
+  // ...y si el TOM no trae alguna de las tiendas de estas expediciones (p. ej. un export manual con otras tiendas).
+  const avTie = (typeof _avisoTOMSinTiendas_ === 'function') ? _avisoTOMSinTiendas_(tomDatos, lista.map(e => String(_anqCodigoTienda_(e.tiendaCodigo)))) : '';
+  if (avTie) avisos.unshift(avTie + '. Esas líneas saldrán como "sin pedido" (REVISAR).');
   return { ok: planes.some(p => p.ok), planes: planes, avisos: avisos };
 }
 

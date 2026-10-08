@@ -166,6 +166,19 @@ function _procesarRecepcionNucleoCalculo_() {
   const verdes = final.filter(f => f[38] === 'VERDE').length;
   let msg = 'Recepción OK · ' + verdes + ' VERDE · ' + res.total + ' nuevos\n' + det;
   if (sinMapa) msg += '\nCódigos sin tienda: ' + sinMapa;
+  // TOM sin actualizar, o sin alguna de las tiendas que hay en este TOP (p. ej. el export manual no trae Granada, 043): se avisa.
+  if (typeof _avisoTOMAntiguo_ === 'function') {
+    const avTom = _avisoTOMAntiguo_(tomDatos);
+    const necesarias = {};
+    for (let i = 1; i < uTOP; i++) {
+      if (t_(top[i][33]).toLowerCase() !== 'no') continue;          // AH: solo las líneas que necesitan cotejo con TOM
+      const n = parseInt(t_(top[i][2]), 10);                          // C: código de tienda
+      if (!isNaN(n)) necesarias[String(n)] = true;
+    }
+    const avTie = _avisoTOMSinTiendas_(tomDatos, Object.keys(necesarias));
+    if (avTie) msg = '⚠️ ' + avTie + '\n' + msg;
+    if (avTom) msg = '⚠️ ' + avTom + '\n' + msg;
+  }
   Logger.log(msg);
   return { mensaje: msg };
 }

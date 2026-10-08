@@ -22,6 +22,8 @@
 
 const TOM_DRIVE_CARPETA_ID = '1_1muNRzTzLrgSLyZdWtpf7GJeRqbplIG';
 const TOM_DRIVE_ARCHIVO = 'Pedidos_Totales.csv';
+/** Tiendas que operamos: código de TOM («Nº Tienda») -> nombre. */
+const TOM_NOMBRE_TIENDA = { '36': 'Málaga', '14': 'Marbella', '279': 'Mijas', '43': 'Granada' };
 /** Si el TOM usado tiene más de estas horas, se avisa (se usa igualmente: Pedro prefiere el último que haya a parar). */
 const TOM_DRIVE_HORAS_AVISO = 6;
 
@@ -175,6 +177,7 @@ function _leerTOMDesdeDrive_() {
             nombre: archivo.getName(),
             actualizado: Utilities.formatDate(fecha, 'Europe/Madrid', 'dd/MM HH:mm'),
             horas: Math.max(0, Math.floor((new Date().getTime() - fecha.getTime()) / 3600000)),
+            tiendas: _tiendasEnTOM_(r.filas, r.iTOM),   // ['14','36','279'] (el export manual) o ['14','36','43','279'] (el del robot)
             posicion: n   // 0 = el más reciente; >0 = hubo que saltarse archivos más nuevos que no servían
           }
         };
@@ -189,6 +192,51 @@ function _leerTOMDesdeDrive_() {
   const p0 = problemas[0];
   return { error: 'TOM (Drive): ' + (p0.faltan ? 'no encuentro en la cabecera estas columnas: ' + p0.faltan.join(', ') + '. ' : 'no se pudo leer. ') + p0.texto +
     (problemas.length > 1 ? ' | Otros archivos: ' + problemas.slice(1).map(p => p.texto).join(' | ') : '') };
+}
+
+/** Códigos de tienda ('36', '14'…) con pedidos en el TOM, o null si no se sabe (el CSV no trae la columna «Nº Tienda»). */
+function _tiendasEnTOM_(filas, iTOM) {
+  if (iTOM.tienda === undefined) return null;
+  const set = {};
+  for (let i = 1; i < filas.length; i++) {
+    const v = filas[i][iTOM.tienda];
+    if (v === undefined) continue;
+    const s = String(v).replace(/[^0-9]/g, '');     // "036" / "36" / "E036" -> 36
+    if (s !== '' && s.length <= 4) set[String(parseInt(s, 10))] = true;
+  }
+  return Object.keys(set).sort((a, b) => a - b);
+}
+
+/**
+ * Código de TOM de una tienda por su nombre ("Málaga", "MARBELLA"…, con o sin tilde); '' si no es una de las nuestras.
+ */
+function _codigoTOMdeTienda_(nombre) {
+  const n = t_(nombre).toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const cods = Object.keys(TOM_NOMBRE_TIENDA);
+  for (let i = 0; i < cods.length; i++) {
+    if (TOM_NOMBRE_TIENDA[cods[i]].toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') === n) return cods[i];
+  }
+  return '';
+}
+
+/**
+ * Aviso si el TOM usado NO trae pedidos de alguna de las tiendas que el proceso necesita. Caso real: el export manual
+ * «Pedidos Vivos» (07/10) solo lleva las tiendas 14, 36 y 279, SIN Granada (43), mientras que el del robot las trae todas;
+ * con él, los pedidos de Granada en Recepción no se cotejaban ni se retenían y no se decía nada. `codigos` = códigos que el
+ * proceso va a necesitar ('36', '043'…). Sin dato de tiendas en el TOM -> sin aviso (no se sabe).
+ */
+function _avisoTOMSinTiendas_(tomDatos, codigos) {
+  const f = tomDatos && tomDatos.fuente;
+  if (!f || !f.tiendas) return '';
+  const faltan = [];
+  (codigos || []).forEach(c => {
+    const k = String(parseInt(String(c).replace(/[^0-9]/g, ''), 10));
+    if (k !== 'NaN' && f.tiendas.indexOf(k) === -1 && faltan.indexOf(k) === -1) faltan.push(k);
+  });
+  if (!faltan.length) return '';
+  return 'El TOM usado (' + f.nombre + ') NO trae pedidos de ' +
+    faltan.map(k => TOM_NOMBRE_TIENDA[k] ? TOM_NOMBRE_TIENDA[k] + ' (' + k + ')' : 'la tienda ' + k).join(' ni de ') +
+    ': esos pedidos no se pueden cotejar y no se retendrán por transporte. Sube un TOM que incluya esa tienda (el del robot las trae todas)';
 }
 
 /** Texto de aviso si el TOM usado no está al día (o hubo que usar uno anterior); '' si todo está bien. */
