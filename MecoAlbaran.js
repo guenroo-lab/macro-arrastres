@@ -24,6 +24,7 @@ function _albaranAFilasTOP_(blobAlbaran) {
   const out = [];
   for (let i = 1; i < filas.length; i++) { // fila 0 = cabecera del Albaran
     const f = filas[i];
+    if (!f.some(c => t_(c) !== '')) continue; // línea en blanco (p. ej. sobrantes al final del CSV)
     const fila = new Array(N).fill('');
     fila[0] = f[MECO_ALBARAN_COL.ID_OPTIMUS];
     fila[2] = f[MECO_ALBARAN_COL.FLETE];
@@ -48,10 +49,11 @@ function _fechaAlbaranADate_(texto) {
 
 /**
  * HTML de impresión de CCM: una tienda por página (salto de página antes de
- * cada una, salvo la primera), con el mismo estilo y el mismo criterio de
- * color alterno por Pyxis (columna P) que ya usa procesarMeco() sobre TOP
- * (CFG.COLORES.VERDE_CLARO/VERDE_OSCURO, cambia de color cuando cambia el
- * Pyxis, no fila a fila). ccmPorTienda: { 'E014': blob, 'E036': blob, ... }.
+ * cada una, salvo la primera), con el mismo criterio que procesarMeco() sobre
+ * TOP: las filas van ORDENADAS por el nº de Pyxis (columna P; el Albarán viene
+ * por pedido, no por Pyxis) y el color alterna (CFG.COLORES.VERDE_CLARO/
+ * VERDE_OSCURO) cada vez que cambia el Pyxis, no fila a fila.
+ * ccmPorTienda: { 'E014': blob, 'E036': blob, ... }.
  * fechaLlegada: Date ya calculada (día siguiente al Albaran, con el salto de
  * fin de semana de siempre) — se muestra igual en las 4 páginas.
  */
@@ -95,10 +97,10 @@ function _htmlImpresionCCM_(ccmPorTienda, fechaLlegada) {
 
   const paginas = codsConDatos
     .map((cod, idx) => {
-      const filas = _albaranAFilasTOP_(ccmPorTienda[cod]);
+      const filas = _ordenarPorPyxis_(_albaranAFilasTOP_(ccmPorTienda[cod]), 15);
       let pyxisAnt = null, alterna = false;
       const filasHtml = filas.map(f => {
-        const pyxis = f[15];
+        const pyxis = _clavePyxis_(f[15]);
         if (pyxis !== pyxisAnt) { alterna = !alterna; pyxisAnt = pyxis; }
         const clase = alterna ? 'p-a' : 'p-b';
         return '<tr class="' + clase + '"><td>' + esc_(f[0]) + '</td><td>' + esc_(f[2]) + '</td><td>' + esc_(f[5]) + '</td><td>' +

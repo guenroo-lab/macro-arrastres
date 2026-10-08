@@ -1,8 +1,9 @@
 /**
  * PROCESO MECO  (solo formato visual)
  * NO hace cotejo: los pedidos de esta hoja ya tienen gastos de envío.
- * Ordena todas las filas por pedido (col P), renombra cabeceras, aplica color
- * por pedido, oculta columnas y fija fecha/hora en V1:V4.
+ * Ordena todas las filas por el nº de Pyxis (col P), renombra cabeceras, aplica
+ * color por Pyxis (cambia al cambiar de pedido), oculta columnas y fija
+ * fecha/hora en V1:V4.
  *
  * fecha y hora se pasan como parámetros (desde el panel o el menú).
  */
@@ -33,20 +34,16 @@ function procesarMeco(fecha, hora) {
 
   // Ordenar TODAS las filas por el pedido Pyxis (col P) — sin cotejo, todas se
   // formatean. Orden numérico cuando ambos valores son números (2 < 10 < 100);
-  // si no, alfabético.
-  const idx = [];
-  for (let i = 1; i < uTOP; i++) idx.push(i);
-  idx.sort((a, b) => _cmpPyxis_(top[a][cP], top[b][cP]));
-
-  const filasFinal = [cab];
-  idx.forEach(i => filasFinal.push(top[i]));
+  // si no, alfabético. A igual Pyxis se respeta el orden que ya tenían.
+  const cuerpo = _ordenarPorPyxis_(top.slice(1), cP);
+  const filasFinal = [cab].concat(cuerpo);
 
   // Backgrounds A:T (20 col), alternando color por pedido (P)
   const ANCHO = 20;
   const fondos = [];
   let pedAnt = '', alt = false;
   for (let f = 1; f < filasFinal.length; f++) {
-    const p = String(filasFinal[f][cP]);
+    const p = _clavePyxis_(filasFinal[f][cP]);
     if (p !== pedAnt) { alt = !alt; pedAnt = p; }
     fondos.push(new Array(ANCHO).fill(alt ? CFG.COLORES.VERDE_CLARO : CFG.COLORES.VERDE_OSCURO));
   }
@@ -70,7 +67,7 @@ function procesarMeco(fecha, hora) {
     .setFontWeight('bold').setHorizontalAlignment('center')
     .setBorder(true, true, true, true, true, true);
 
-  const msg = `Meco con formato aplicado · ${idx.length} líneas · llegada ${fecha} ${hora}.`;
+  const msg = `Meco con formato aplicado · ${cuerpo.length} líneas · llegada ${fecha} ${hora}.`;
   ss.toast(msg, '🚛 Meco', 6);
   return msg;
 }
@@ -93,6 +90,29 @@ function procesarMecoMenu() {
     hora = t_(r.getResponseText()) || '6:00';
   }
   procesarMeco(fecha, hora);
+}
+
+/**
+ * Clave de un Pyxis para agrupar y colorear: lo que se ordena como igual (305 y
+ * 0305) tiene la MISMA clave, así el color nunca cambia dentro de un Pyxis.
+ */
+function _clavePyxis_(v) {
+  const s = t_(v);
+  const n = Number(s.replace(',', '.'));
+  return (s !== '' && isFinite(n)) ? String(n) : s;
+}
+
+/**
+ * COPIA de las filas ordenada por el nº de Pyxis (columna `iPyxis`, base 0):
+ * numérico (2 < 10 < 100) y, a igual Pyxis, en el orden que ya tenían. El
+ * desempate por posición va explícito para no depender de que el motor de JS
+ * ordene de forma estable. Lo usan procesarMeco (hoja TOP) y la impresión del
+ * CCM del ZIP (_htmlImpresionCCM_), así los dos caminos ordenan igual.
+ */
+function _ordenarPorPyxis_(filas, iPyxis) {
+  return filas.map((f, i) => ({ f: f, i: i }))
+    .sort((a, b) => _cmpPyxis_(a.f[iPyxis], b.f[iPyxis]) || (a.i - b.i))
+    .map(x => x.f);
 }
 
 /**

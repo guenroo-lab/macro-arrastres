@@ -323,6 +323,23 @@ Depende solo de `esc_()` y del scope `script.send_mail` (ya presente).
 `procesarMeco` ordena por el **pedido Pyxis** (columna P) de forma **numérica** cuando los
 valores son números (`_cmpPyxis_`), no alfabética. El color alterna por ese mismo Pyxis.
 
+**Los DOS caminos de Meco ordenan y colorean igual (2026-10-08).** Pedro: «debemos ordenar las filas por el número de Pyxis,
+las filas deben cambiar de color cada vez que cambia de pedido». «Pedido» aquí = **pedido Pyxis (columna P / PYXIS del
+Albarán)**, NO la columna PEDIDO (H): un Pyxis puede juntar 2 pedidos y un pedido puede tener varios Pyxis (visto en el ZIP real
+de 08/10: Marbella 986429 = pedidos 99723542 y 99723545; el pedido 99722239 reparte sus líneas en 3 Pyxis), y el almacén prepara
+por Pyxis. Si algún día se quisiera colorear por la columna PEDIDO, es solo cambiar la clave de color en los dos sitios.
+- Hoja TOP: `procesarMeco` (Proceso_Meco.gs). Menú «Meco — aplicar formato» y `Panel.html` antiguo.
+- ZIP (el que usa el Panel web): `_htmlImpresionCCM_` (MecoAlbaran.gs). **Hasta el 08/10 NO ordenaba**: respetaba el orden del
+  Albarán, que viene por PEDIDO (H), no por Pyxis; con los Albaranes reales Málaga salía en 46 bloques de color y los Pyxis
+  301774, 295531 y 301521 aparecían repartidos en varios bloques. Ahora sale en 42 bloques, cada Pyxis en uno solo.
+- Helpers compartidos (Proceso_Meco.gs): `_ordenarPorPyxis_(filas, iPyxis)` (copia ordenada: numérico 2 < 10 < 100, los que no
+  son número después, a igual Pyxis el orden original) y `_clavePyxis_(v)` (305 y 0305 = mismo Pyxis → mismo color). MecoAlbaran.gs
+  depende de ellos (en Apps Script es un solo ámbito global; los tests que carguen MecoAlbaran.gs deben cargar también Proceso_Meco.gs).
+- `_albaranAFilasTOP_` ignora las líneas totalmente en blanco del CSV (antes salían como filas vacías con color).
+- Pruebas (fuera del repo, `Proyectos\_scratch\`): `test_meco_orden_pyxis.js` (Albaranes reales de `fixtures\meco\R-8962-BCK.zip` +
+  casos fabricados + hoja TOP; `--head` enseña el fallo original), `mut_meco_orden.js` (13 mutaciones, todas deben morir),
+  `e2e_meco_hoy.js` (`procesarZipMeco` entero con el ZIP real).
+
 `procesarMeco` **no toca la columna A** (guarda el nº de **Optimus**, referencia de envío). El origen
 "Meco" para la carátula sale del bloque de información V1:V4 (V2='Meco'), no de traducir esa columna.
 La carátula (`_datosCaratula_`, Impresion.gs) muestra ese nº de Optimus (col A) como "Nº transporte"
