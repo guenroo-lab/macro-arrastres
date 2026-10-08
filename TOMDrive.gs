@@ -3,32 +3,59 @@
  *
  * TOM ya no es una hoja donde se pega el CSV a mano: se lee directo desde
  * Drive en cada pasada. Pedro no necesita ver ni tocar TOM — solo se usa
- * para cotejar contra TOP (transporte, LM, cantidad...). Carpeta y nombre
- * de archivo fijos; siempre se lee la última versión subida.
+ * para cotejar contra TOP (transporte, LM, cantidad...). Carpeta fija; se usa
+ * SIEMPRE el CSV más reciente que haya en ella, esté o no actualizado hoy.
  *
- * Las columnas se localizan por CABECERA (fila 1 del CSV), no por posición
- * fija — así aguanta que Leroy Merlin reordene el export sin tocar código
- * (ver _indicesTOM_ en Menu.gs).
+ * Las columnas se localizan por CABECERA, no por posición fija — así aguanta
+ * que Leroy Merlin reordene el export sin tocar código (ver _indicesTOM_ en Menu.gs).
  *
- * 2026-10-07 — «TOM (Drive): no encuentro en la cabecera estas columnas…» con las 7 columnas a la vez y
- * el macro parado. La lectura era demasiado rígida: un solo camino (UTF-8, ';', cabecera en la primera
- * fila, nombres exactos) y un error sin pistas. Ahora, si el camino de siempre no encuentra las columnas,
- * se prueba lo razonable (otra codificación, otro separador, cabecera en otra fila, el archivo anterior si
- * el más reciente está a medias) y, si nada sirve, el error DICE QUÉ HA LEÍDO (archivo, tamaño, filas,
- * separador, cabecera) para poder diagnosticarlo sin adivinar. Si el camino de siempre funciona, el
- * resultado es exactamente el de antes.
+ * 2026-10-07/08 — «TOM (Drive): no encuentro en la cabecera estas columnas: pyxis, transporte, referencia, …»
+ * (las 7 a la vez, macro parado). CAUSA REAL (confirmada con la muestra del archivo de las 19:08 del 07/10):
+ * el CSV pasó a ser el informe «Pedidos Vivos con líneas»: delante de la cabecera lleva una LÍNEA DE TÍTULO
+ * («Pedidos Vivos con lineas:fecha entre 2025-09-01 y 2026-10-07, tienda: ('14','36','279'), …») y una línea en
+ * blanco, y la cabecera trae 124 columnas (las 110 de siempre + 14 «Infolog»). La lectura daba por hecho que la
+ * cabecera era la primera fila. El archivo del robot (110 columnas, sin título) sigue siendo válido: se aceptan
+ * los dos formatos. Además se endureció la lectura (otra codificación, separador, cabecera en las primeras filas,
+ * nombres normalizados) y, si algún día nada sirve, el error DICE QUÉ HA LEÍDO para diagnosticarlo sin adivinar.
+ * Si el formato de siempre funciona, el resultado es exactamente el de antes.
  */
 
 const TOM_DRIVE_CARPETA_ID = '1_1muNRzTzLrgSLyZdWtpf7GJeRqbplIG';
 const TOM_DRIVE_ARCHIVO = 'Pedidos_Totales.csv';
+/** Si el TOM usado tiene más de estas horas, se avisa (se usa igualmente: Pedro prefiere el último que haya a parar). */
+const TOM_DRIVE_HORAS_AVISO = 6;
 
 /** Columnas que TODOS los procesos necesitan como mínimo para funcionar. */
 const TOM_DRIVE_COLUMNAS_MINIMAS = ['pyxis', 'transporte', 'referencia', 'descReferencia', 'tipoLinea', 'cantidad', 'pegase'];
 
 /**
+ * Separador del CSV: el que MÁS veces aparece en una línea de las primeras (la cabecera y las filas de datos
+ * llevan más de 100; una línea de título suelta con comas, no). Empate o nada claro -> ';' como siempre.
+ */
+function _detectarSeparadorTOM_(texto) {
+  const lineas = [];
+  let desde = 0;
+  while (lineas.length < 40 && desde < texto.length) {
+    let hasta = texto.indexOf('\n', desde);
+    if (hasta < 0) hasta = texto.length;
+    const l = texto.substring(desde, Math.min(hasta, desde + 20000));
+    if (l.trim() !== '') lineas.push(l);
+    desde = hasta + 1;
+  }
+  let mejor = ';', max = 0;
+  [';', ',', '\t'].forEach(d => {
+    let m = 0;
+    lineas.forEach(l => { m = Math.max(m, l.split(d).length - 1); });
+    if (m > max) { max = m; mejor = d; }
+  });
+  return max >= 2 ? mejor : ';';
+}
+
+/**
  * Convierte el texto del CSV de TOM en filas, o describe por qué no puede.
  * Devuelve { filas, iTOM, delim, filaCabecera } si están TODAS las columnas mínimas; si no,
- * { faltan, diag } con lo que se ha visto (para el mensaje de error).
+ * { faltan, diag } con lo que se ha visto (para el mensaje de error). filas[0] es SIEMPRE la cabecera
+ * (si el archivo trae título o líneas en blanco delante, se descartan).
  * Pura (sin Drive): se prueba en Node.
  */
 function _parsearTOMTexto_(texto, delimForzado) {
@@ -44,13 +71,7 @@ function _parsearTOMTexto_(texto, delimForzado) {
   const BOM = String.fromCharCode(0xFEFF);
   texto = String(texto == null ? '' : texto).split(BOM).join('\n');
 
-  // Separador: ';' como siempre, salvo que la primera línea con contenido diga otra cosa.
-  let delim = delimForzado || ';';
-  if (!delimForzado) {
-    const primera = (texto.split('\n').filter(l => l.trim() !== '')[0] || '').substring(0, 4000);
-    const cuenta = { ';': primera.split(';').length, ',': primera.split(',').length, '\t': primera.split('\t').length };
-    if (cuenta[';'] < 3) delim = cuenta['\t'] > cuenta[','] ? '\t' : (cuenta[','] >= 3 ? ',' : ';');
-  }
+  const delim = delimForzado || _detectarSeparadorTOM_(texto);
 
   let filas;
   try {
@@ -63,22 +84,23 @@ function _parsearTOMTexto_(texto, delimForzado) {
   while (filas.length && filas[0].every(c => t_(c) === '')) filas.shift();
   if (!filas.length) return { faltan: TOM_DRIVE_COLUMNAS_MINIMAS.slice(), diag: 'el archivo está vacío', delim: delim };
 
-  // La cabecera suele ser la primera fila; si no (líneas de título delante), se busca en las primeras.
+  // La cabecera suele ser la primera fila; si no (línea de título del informe «Pedidos Vivos», líneas en
+  // blanco...), se busca en las primeras y se descarta lo de antes.
   let mejor = null;
-  for (let k = 0; k < Math.min(filas.length, 10); k++) {
+  for (let k = 0; k < Math.min(filas.length, 40); k++) {
     const iTOM = _indicesTOM_(filas[k]);
     const faltan = TOM_DRIVE_COLUMNAS_MINIMAS.filter(c => iTOM[c] === undefined);
     if (!mejor || faltan.length < mejor.faltan.length) mejor = { k: k, iTOM: iTOM, faltan: faltan };
     if (!faltan.length) break;
   }
   if (mejor.faltan.length) {
-    const cab = filas[0].slice(0, 8).map(c => t_(c).substring(0, 28));
+    const cab = filas[0].slice(0, 8).map(c => t_(c).substring(0, 60));
     const cod = t_(filas[0][0]).substring(0, 4).split('').map(ch => ch.charCodeAt(0).toString(16)).join(' ');
     return {
       faltan: mejor.faltan,
       delim: delim,
       diag: filas.length + ' filas, ' + filas[0].length + ' columnas, separador ' + (delim === '\t' ? 'TAB' : '"' + delim + '"') +
-        ', cabecera: ' + JSON.stringify(cab) + (filas[0].length > 8 ? '…' : '') + ' (1ª celda en hex: ' + cod + ')'
+        ', 1ª fila: ' + JSON.stringify(cab) + (filas[0].length > 8 ? '…' : '') + ' (1ª celda en hex: ' + cod + ')'
     };
   }
   if (mejor.k > 0) filas = filas.slice(mejor.k);
@@ -86,27 +108,30 @@ function _parsearTOMTexto_(texto, delimForzado) {
 }
 
 /**
- * Archivos de TOM en la carpeta: el nombre se busca con y sin mayúsculas (el robot lo sube en minúsculas),
- * el más reciente primero.
+ * CSV de TOM de la carpeta, el MÁS RECIENTE primero (por fecha de modificación): se usa el último que haya, esté
+ * o no actualizado hoy, y se llame como se llame (el robot lo sube «pedidos_totales.csv»; una subida a mano puede
+ * llevar otro nombre, p. ej. «pedidos_totales (1).csv»). El CSV «_2» (otro informe, ~100 MB, lo lee INCPC) no se
+ * usa: es de otra consulta y no cabe en memoria.
  */
 function _archivosTOMDrive_(carpeta) {
-  const vistos = {}, lista = [];
-  [TOM_DRIVE_ARCHIVO, TOM_DRIVE_ARCHIVO.toLowerCase()].forEach(nombre => {
-    const it = carpeta.getFilesByName(nombre);
-    while (it.hasNext()) {
-      const f = it.next();
-      if (!vistos[f.getId()]) { vistos[f.getId()] = true; lista.push(f); }
-    }
-  });
+  const lista = [];
+  const it = carpeta.getFiles();
+  while (it.hasNext()) {
+    const f = it.next();
+    const nombre = f.getName();
+    if (!/\.csv$/i.test(nombre) && f.getMimeType() !== MimeType.CSV) continue;   // los .xlsx de inventario de las tiendas no
+    if (/_2(\.| \()/i.test(nombre)) continue;                                      // pedidos_totales_2.csv
+    lista.push(f);
+  }
   lista.sort((a, b) => b.getLastUpdated().getTime() - a.getLastUpdated().getTime());
   return lista;
 }
 
 /**
  * Lee y parsea el CSV de TOM desde Drive.
- * Devuelve { filas, iTOM } si todo va bien (filas[0] = cabecera, incluida);
- * o { error } con un mensaje ya listo para toast si algo falla (carpeta o
- * archivo no encontrado, o faltan columnas esperadas en la cabecera).
+ * Devuelve { filas, iTOM, fuente } si todo va bien (filas[0] = cabecera, incluida; fuente = { nombre, actualizado,
+ * horas } del archivo usado, para avisar si no está al día); o { error } con un mensaje ya listo para toast si
+ * algo falla (carpeta o archivo no encontrado, o faltan columnas esperadas en la cabecera).
  */
 function _leerTOMDesdeDrive_() {
   let archivos;
@@ -116,14 +141,14 @@ function _leerTOMDesdeDrive_() {
     return { error: 'TOM (Drive): no puedo acceder a la carpeta (' + e.message + ').' };
   }
   if (!archivos.length) {
-    return { error: 'TOM (Drive): no encuentro "' + TOM_DRIVE_ARCHIVO + '" en la carpeta.' };
+    return { error: 'TOM (Drive): no encuentro "' + TOM_DRIVE_ARCHIVO + '" en la carpeta (ni ningún otro CSV de TOM).' };
   }
 
   const problemas = [];
   for (let n = 0; n < archivos.length; n++) {
     const archivo = archivos[n];
-    const nombre = archivo.getName() + ' (' + archivo.getSize() + ' bytes, ' +
-      Utilities.formatDate(archivo.getLastUpdated(), 'Europe/Madrid', 'dd/MM HH:mm') + ')';
+    const fecha = archivo.getLastUpdated();
+    const nombre = archivo.getName() + ' (' + archivo.getSize() + ' bytes, ' + Utilities.formatDate(fecha, 'Europe/Madrid', 'dd/MM HH:mm') + ')';
     let blob;
     try {
       blob = archivo.getBlob();
@@ -143,7 +168,17 @@ function _leerTOMDesdeDrive_() {
         continue;
       }
       const r = _parsearTOMTexto_(texto);
-      if (r.filas) return { filas: r.filas, iTOM: r.iTOM };
+      if (r.filas) {
+        return {
+          filas: r.filas, iTOM: r.iTOM,
+          fuente: {
+            nombre: archivo.getName(),
+            actualizado: Utilities.formatDate(fecha, 'Europe/Madrid', 'dd/MM HH:mm'),
+            horas: Math.max(0, Math.floor((new Date().getTime() - fecha.getTime()) / 3600000)),
+            posicion: n   // 0 = el más reciente; >0 = hubo que saltarse archivos más nuevos que no servían
+          }
+        };
+      }
       ultimo = r;
       ultimo.codificacion = codificaciones[c];
       if (c === 0 && /no se puede leer como CSV/.test(r.diag || '')) break;   // un fallo de formato no se arregla cambiando de codificación
@@ -154,4 +189,15 @@ function _leerTOMDesdeDrive_() {
   const p0 = problemas[0];
   return { error: 'TOM (Drive): ' + (p0.faltan ? 'no encuentro en la cabecera estas columnas: ' + p0.faltan.join(', ') + '. ' : 'no se pudo leer. ') + p0.texto +
     (problemas.length > 1 ? ' | Otros archivos: ' + problemas.slice(1).map(p => p.texto).join(' | ') : '') };
+}
+
+/** Texto de aviso si el TOM usado no está al día (o hubo que usar uno anterior); '' si todo está bien. */
+function _avisoTOMAntiguo_(tomDatos) {
+  const f = tomDatos && tomDatos.fuente;
+  if (!f) return '';
+  if (f.horas < TOM_DRIVE_HORAS_AVISO && !f.posicion) return '';
+  const porque = f.posicion
+    ? ', porque ' + (f.posicion === 1 ? 'el archivo más reciente no se pudo leer' : 'los ' + f.posicion + ' archivos más recientes no se pudieron leer')
+    : '';
+  return 'TOM sin actualizar: se usa ' + f.nombre + ' del ' + f.actualizado + ' (hace ' + f.horas + ' h)' + porque;
 }

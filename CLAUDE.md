@@ -345,15 +345,26 @@ cualquier carpeta ausente, p. ej. `CCM/E279` cuando Mijas no manda nada, devolv�
 ## Despliegue (clasp)
 
 Ver `README_CLAUDE_CODE.md`.
-## TOM desde Drive (`TOMDrive.gs`) — lectura robusta (2026-10-07)
+## TOM desde Drive (`TOMDrive.gs`) — usa SIEMPRE el último CSV que haya (2026-10-08)
 
-`_leerTOMDesdeDrive_` lee `pedidos_totales.csv` de la carpeta de inventarios (id en `TOM_DRIVE_CARPETA_ID`; el robot lo sube en
-minúsculas y `getFilesByName` lo encuentra aunque el código diga «Pedidos_Totales.csv»; ahora se buscan los dos nombres y se
-ordenan por fecha, el más reciente primero). Lo usan TODOS los procesos (Valencia/Torija, Meco, Recepción, Antequera). Un día
-dio «TOM (Drive): no encuentro en la cabecera estas columnas: pyxis, transporte, referencia, …» (las 7 a la vez, macro parado) y
-no se pudo reproducir con la muestra de Drive (la cabecera era la de siempre), así que se endureció SIN cambiar el camino normal:
-si UTF-8 + «;» + cabecera en la 1ª fila no encuentra las columnas, prueba UTF-16 e ISO-8859-1, detecta el separador (; , TAB),
-busca la cabecera en las 10 primeras filas, compara los nombres normalizados (`_normCabeceraTOM_`: sin acentos, «Nº»/«N°»/«No»,
-mayúsculas, comillas) y, si el archivo más reciente no sirve (subida a medias), prueba el anterior. **Si TODO falla, el error dice
-qué ha leído** (archivo, bytes, hora, filas, columnas, separador, cabecera y el hex de la 1ª celda): pedir la captura. Pruebas:
-`_scratch\test_tom_drive.js` (+ `mut_tom.js`, 9 mutaciones). Con el camino normal el resultado es idéntico al de antes (comparado con HEAD).
+`_leerTOMDesdeDrive_` lee el CSV de TOM de la carpeta de inventarios (id en `TOM_DRIVE_CARPETA_ID`; la misma carpeta de los
+`036/014/279/043.xlsx`). Lo usan TODOS los procesos (Valencia/Torija, Meco, Recepción, Antequera).
+
+**Causa real del fallo «TOM (Drive): no encuentro en la cabecera estas columnas: pyxis, transporte, referencia, …» (7 y 8/10):**
+el CSV pasó a ser el informe **«Pedidos Vivos con líneas»** (subida a mano del export de la web de TOM: UN solo BOM, no los dos del
+robot): delante de la cabecera lleva una **línea de título** («Pedidos Vivos con lineas:fecha entre 2025-09-01 y 2026-10-07, tienda:
+('14','36','279'), estado: (…),») y una línea en blanco, y la cabecera trae **124 columnas** (las 110 de siempre, mismo orden, + 14
+«Infolog»). La lectura daba por hecha la cabecera en la 1ª fila. El CSV del robot (110 columnas, sin título) sigue valiendo: se
+aceptan los dos. Comprobado con la muestra real (prueba `test_tom_drive.js`: el código anterior falla con ESA muestra con el
+mensaje exacto de Pedro).
+
+Qué hace ahora: (1) **candidatos = todos los CSV de la carpeta, el más reciente primero** (por fecha de modificación, se llamen como se
+llamen: una subida a mano puede llevar otro nombre), ignorando los `.xlsx` y **`pedidos_totales_2.csv`** (otro informe, ~100 MB, lo
+lee INCPC; no cabe en memoria); (2) para cada uno prueba UTF-8 → UTF-16 → ISO-8859-1; (3) separador = el que más aparece en las
+primeras líneas (`_detectarSeparadorTOM_`; un título con comas ya no lo engaña); (4) la cabecera se busca en las 40 primeras filas y
+se descartan las de antes; (5) nombres de columna normalizados (`_normCabeceraTOM_`: sin acentos, «Nº»/«N°»/«No», mayúsculas,
+comillas); (6) si el más reciente no sirve, prueba el anterior; (7) **aunque el TOM no esté actualizado se usa igualmente** (Pedro:
+«el último que esté en el directorio») y se AVISA (`_avisoTOMAntiguo_`, a partir de 6 h o si hubo que saltarse archivos): primer
+aviso del análisis de Antequera y principio del resumen de procesarArrastres; (8) si TODO falla, el error dice qué ha leído (archivo,
+bytes, hora, filas, columnas, separador y las primeras celdas de la cabecera). Con el CSV de siempre el resultado es idéntico al de
+antes (comparado con el código v57). Pruebas: `_scratch\test_tom_drive.js`, `test_antequera_multi.js` (avisos), `mut_tom.js` (15 mutaciones).

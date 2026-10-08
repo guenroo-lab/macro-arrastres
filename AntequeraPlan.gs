@@ -108,6 +108,9 @@ function _anqAnalizarVarias_(lista, tomDatos, ceramica) {
   Object.keys(dondeEsta).forEach(s => {
     if (dondeEsta[s].length > 1) avisos.push('El soporte ' + s + ' sale en varias expediciones (' + dondeEsta[s].join(' y ') + '): revisa que los PDF sean de cada tienda.');
   });
+  // TOM sin actualizar (se usa igualmente el último que haya en la carpeta): los pedidos posteriores no estarán.
+  const avTom = (typeof _avisoTOMAntiguo_ === 'function') ? _avisoTOMAntiguo_(tomDatos) : '';
+  if (avTom) avisos.unshift(avTom + '. Los pedidos hechos después no están en él: saldrán como "sin pedido" (REVISAR).');
   return { ok: planes.some(p => p.ok), planes: planes, avisos: avisos };
 }
 

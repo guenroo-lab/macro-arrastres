@@ -376,6 +376,9 @@ function _procesarArrastresNucleoCalculo_() {
   if (hodos.sinCatalogo) {
     msg = '⚠️ Falta la hoja CERAMICA (catálogo de LM): HODOS solo trae los de TRAMECO. · ' + msg;
   }
+  // TOM sin actualizar: se usa el último CSV que haya en Drive (Pedro, 2026-10-08), pero se dice.
+  const avTom = (typeof _avisoTOMAntiguo_ === 'function') ? _avisoTOMAntiguo_(tomDatos) : '';
+  if (avTom) msg = '⚠️ ' + avTom + ' · ' + msg;
   if (envio.ok.length || envio.fallidos.length) {
     msg += ' · Envío HODOS: ' + envio.ok.length + ' lote(s) OK';
     if (envio.fallidos.length) {
