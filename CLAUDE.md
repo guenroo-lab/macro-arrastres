@@ -399,3 +399,19 @@ Granada en Recepción no se coteja­ban ni se retenían SIN avisar; ahora `_tien
 (`fuente.tiendas`) y `_avisoTOMSinTiendas_` avisa («El TOM usado … NO trae pedidos de Granada (43)…») en Recepción (mensaje), en
 procesarArrastres y en el análisis de Antequera, solo si el TOP/expediciones que se procesan usan esa tienda. Prueba de Recepción con
 hojas simuladas: `_scratch\test_recepcion_tom.js` (Granada: 0 VERDE con el manual, 1 con el del robot).
+
+## Registro para Argos (2026-10-18, pedido de Pedro) — `RegistroArgos.gs`
+Argos (cuadro de actividad de la plataforma, proyecto aparte) lee este documento. `HISTORICO` solo guarda lo retenido y enviado por correo, así que Meco (el ZIP imprime el CCM y manda
+etiquetas a HODOS sin dejar nada) y las separaciones de pedidos no salían. Dos pestañas NUEVAS, persistentes (ni «Borrar TOP» ni «Borrar todo» las tocan), que SOLO reciben filas; `HISTORICO` y
+los informes por correo no se tocan:
+- **`MECO_CCM`** (Fecha, Tienda, Pedido, Pyxis, Soporte, Agrupacion, DiaPrevisto): `procesarZipMeco` anota, tras montar la impresión, una fila por pedido + Pyxis + soporte del Albarán de cada tienda del CCM.
+  Soporte = `SOP_ALM1` (Pedro: «los soportes que nosotros nos quedamos y tratamos son los soportes CCM»); `AGRUP_ALM1` va en Agrupacion. Tienda con el nombre (E036 → Málaga…).
+- **`SEPARADOS`** (Fecha, Tienda, Origen, Soporte, Pedido, Motivo): `_procesarArrastresNucleoCalculo_` anota, tras enviar a HODOS, los pedidos que se separan de su soporte (`_separacionesDeTop_`): por cada soporte
+  con más de un pedido, los pedidos de cerámica (LM en la hoja CERAMICA); en **Málaga todos** (con o sin transporte; también tránsito de Antequera y los pedidos 99) y en Marbella y Mijas **solo los que tienen
+  transporte «SI» en TOM**; el CC sin Pyxis se recupera por el Pegase. Una fila por pedido y soporte (es también un soporte nuevo: cada pedido separado va en el suyo). El mensaje de procesarArrastres añade
+  « · Separados: N pedido(s) en M soporte(s) nuevos (tienda n …)» solo si hay.
+- Fecha = el día en que se procesa (texto dd/MM/aaaa con formato de texto, como `HISTORICO`); si se repite el proceso el mismo día no se duplica nada (clave de cada fila dentro del día). Sin histórico anterior.
+- Las dos llamadas van en `try/catch`: si anotar falla, la impresión, los retenidos y las etiquetas HODOS siguen igual y solo se avisa (en `avisos` de `procesarZipMeco`; en el registro en arrastres).
+- Pruebas (fuera del repo, `Proyectos\_scratch\`): `test_registro_argos.js` (ZIP real `fixtures\meco\R-8962-BCK.zip` y TOP sintético de 400 filas: impresión CCM, TOP, RETENIDOS, HODOS y lotes IDÉNTICOS a git HEAD) y
+  `mut_registro_argos.js` (20 mutaciones, todas deben morir).
+- Desplegado el 18/10/2026 como **v62** (`AKfycbzflt…` @62; vuelta atrás `clasp deploy -i AKfycbzflt… -V 61`) con `deploy_panel.ps1` (HEAD + `MecoAlbaran.gs` de trabajo); `clasp pull` aparte == local en los 37 archivos.
