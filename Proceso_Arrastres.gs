@@ -368,6 +368,19 @@ function _procesarArrastresNucleoCalculo_() {
   const envio = _enviarLineasHodos_(hodos.lineas);
   _marca('enviar a HODOS');
 
+  // --- 13. Pedidos separados (Pedro, 2026-10-18): se anotan en SEPARADOS para que Argos cuente los pedidos separados y los soportes nuevos.
+  // Va aparte y protegido: si falla, el proceso (TOP, retenidos y etiquetas) queda como estaba y solo se deja constancia en el registro. ---
+  let separados = null;
+  try {
+    const cerSep = _catalogoCeramica_();
+    if (cerSep) {
+      const listaSep = _separacionesDeTop_(filasFinal, cerSep, transportePyxis, _pyxisPorPegase_(tom, uTOM, iTOM.pegase, iTOM.pyxis), { cA, cG, cJ, cK, cP, cS, cT });
+      _guardarSeparados_(listaSep);
+      separados = _resumenSeparados_(listaSep);
+    }
+  } catch (e) { Logger.log('Separados (Argos): ' + e.message); }
+  _marca('anotar separados');
+
   let msg = 'Arrastres OK · ' + verdes.length + ' VERDE · ' + nMorado + ' LS-SIE' +
     (nSoportesBloqueados ? ' (' + nSoportesBloqueados + ' soportes LS con >2 artículos, no retenidos)' : '') +
     ' · ' + res.total + ' nuevos → ' + det +
@@ -375,6 +388,10 @@ function _procesarArrastresNucleoCalculo_() {
     hodos.cc2 + ' CC2, ' + hodos.ls + ' LS, ' + (hodos.antequera ? hodos.antequera + ' Antequera, ' : '') + (hodos.antDivididos ? hodos.antDivididos + ' palé(s) de cerámica Málaga divididos por pedido, ' : '') + (hodos.sobrantes ? hodos.sobrantes + ' sobrante(s), ' : '') + hodos.trameco + ' de TRAMECO)';
   if (hodos.sinCatalogo) {
     msg = '⚠️ Falta la hoja CERAMICA (catálogo de LM): HODOS solo trae los de TRAMECO. · ' + msg;
+  }
+  if (separados && separados.pedidos) {
+    msg += ' · Separados: ' + separados.pedidos + ' pedido(s) en ' + separados.soportes + ' soporte(s) nuevos (' +
+      Object.keys(separados.porTienda).map(t => t + ' ' + separados.porTienda[t]).join(' · ') + ')';
   }
   // TOM sin actualizar: se usa el último CSV que haya en Drive (Pedro, 2026-10-08), pero se dice.
   const avTom = (typeof _avisoTOMAntiguo_ === 'function') ? _avisoTOMAntiguo_(tomDatos) : '';

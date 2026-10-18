@@ -112,6 +112,10 @@ function procesarZipMeco(base64, nombreArchivo) {
     const fechaLlegada = new Date(Number(partes[2]), Number(partes[1]) - 1, Number(partes[0]));
 
     htmlImpresion = _htmlImpresionCCM_(sel.ccm, fechaLlegada);
+
+    // Los soportes del CCM son los que nos quedamos y tratamos: se anotan en MECO_CCM para que Argos pueda contarlos (HISTORICO solo guarda lo retenido y
+    // enviado). Va aparte de la impresión: si falla, la impresión y las etiquetas siguen igual y solo se avisa.
+    try { _guardarMecoCcm_(sel.ccm, fechaLlegada); } catch (e) { avisos.push('No se pudieron anotar los soportes del CCM de Meco para Argos: ' + e.message); }
   }
 
   let hodos = null;
